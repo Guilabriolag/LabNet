@@ -1,72 +1,634 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LABRIOLAG - Core 25/25</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <style>
-        body { background: #000; color: #d4af37; font-family: 'Courier New', monospace; text-align: center; padding: 20px; transition: 0.5s; }
-        .monitor { border: 2px dashed #d4af37; padding: 20px; border-radius: 10px; margin-top: 5vh; }
-        #status { font-size: 1.2rem; font-weight: bold; text-transform: uppercase; margin: 20px 0; }
-        #qrcode { background: white; padding: 10px; display: inline-block; margin-top: 10px; border-radius: 5px; }
-        .btn-pulso { background: #d4af37; color: #000; border: none; padding: 15px; font-weight: bold; cursor: pointer; border-radius: 5px; width: 100%; margin-top: 10px; }
-        #log-area { margin-top: 20px; font-size: 0.9rem; color: #00ffcc; min-height: 50px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LabNet v001 — Interface de Valor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #00ff9d;
+    --accent: #00cc7a;
+    --dim: #003322;
+    --gold: #d4af37;
+    --gold-dim: #7a6010;
+    --border: #00ff9d33;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Orbitron', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.6s ease, color 0.6s ease;
+    position: relative;
+  }
+
+  /* Grid scanlines */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,255,157,0.015) 2px,
+      rgba(0,255,157,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Noise overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 998;
+  }
+
+  body.ACTIVATED {
+    --bg: #d4af37;
+    --fg: #000;
+    --accent: #1a0d00;
+    --dim: #b8962e;
+    --border: #00000033;
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  body.ACTIVATED::before {
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+    );
+  }
+
+  .container {
+    width: min(720px, 95vw);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .logo span {
+    color: var(--gold);
+  }
+  body.ACTIVATED .logo span { color: #000; }
+
+  .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    opacity: 0.5;
+    margin-top: 0.4rem;
+    text-transform: uppercase;
+  }
+
+  /* Seismograph */
+  .seismo-wrap {
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    background: rgba(0,255,157,0.02);
+  }
+  body.ACTIVATED .seismo-wrap { background: rgba(0,0,0,0.05); }
+
+  .seismo-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    opacity: 0.4;
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+  }
+
+  canvas#seismo {
+    width: 100%;
+    height: 80px;
+    display: block;
+  }
+
+  /* Status Panel */
+  .status-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-block {
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+    background: rgba(0,255,157,0.02);
+  }
+  body.ACTIVATED .panel-block { background: rgba(0,0,0,0.05); }
+
+  .panel-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.25em;
+    opacity: 0.4;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .panel-value {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    word-break: break-all;
+    transition: color 0.4s;
+  }
+
+  /* Main message */
+  .main-message {
+    border: 1px solid var(--border);
+    padding: 1.8rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,255,157,0.02);
+    position: relative;
+    overflow: hidden;
+  }
+  body.ACTIVATED .main-message { background: rgba(0,0,0,0.05); }
+
+  .main-message::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--fg), transparent);
+    opacity: 0;
+    transform: scaleX(0);
+    transition: opacity 0.3s, transform 0.5s;
+  }
+  .main-message.flash::before {
+    opacity: 0.05;
+    transform: scaleX(1);
+    animation: scanFlash 0.5s ease forwards;
+  }
+  @keyframes scanFlash {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .status-text {
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    transition: all 0.4s;
+  }
+
+  .status-sub {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    opacity: 0.5;
+    margin-top: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  /* Amount buttons */
+  .amount-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .amt-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    padding: 0.8rem 0.5rem;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .amt-btn:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .amt-btn .sat-num {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .amt-btn .sat-label {
+    font-size: 0.55rem;
+    opacity: 0.6;
+    letter-spacing: 0.2em;
+  }
+
+  /* Log terminal */
+  .log-wrap {
+    border: 1px solid var(--border);
+    padding: 1rem 1.2rem;
+    background: rgba(0,0,0,0.3);
+  }
+  body.ACTIVATED .log-wrap { background: rgba(0,0,0,0.1); }
+
+  .log-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.25em;
+    opacity: 0.4;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  #log-output {
+    font-size: 0.7rem;
+    line-height: 1.7;
+    height: 100px;
+    overflow-y: auto;
+    opacity: 0.7;
+  }
+  #log-output div::before {
+    content: '> ';
+    opacity: 0.4;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    opacity: 0.3;
+    text-transform: uppercase;
+  }
+
+  /* Blink cursor */
+  @keyframes blink { 50% { opacity: 0; } }
+  .cursor { animation: blink 1s step-end infinite; }
+
+  /* Pulse ring on activation */
+  .pulse-ring {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--gold);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 997;
+  }
+  .pulse-ring.fire {
+    animation: pulseExpand 0.8s ease-out forwards;
+  }
+  @keyframes pulseExpand {
+    0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(80); }
+  }
+</style>
 </head>
 <body>
 
-    <div class="monitor">
-        <div style="font-size: 0.7rem; color: #555;">FREQUÊNCIA DE ESCUTA: 0.03s</div>
-        <div id="status">AGUARDANDO INICIALIZAÇÃO...</div>
-        
-        <button class="btn-pulso" onclick="gerarFatura(21)">GERAR PULSO DE 21 SATS</button>
-        
-        <div id="qrcode"></div>
-        
-        <div id="log-area">Pronto para receber fofoca da rede.</div>
+<div class="pulse-ring" id="pulseRing"></div>
+
+<div class="container">
+
+  <div class="header">
+    <div class="logo">Lab<span>Net</span> v001</div>
+    <div class="subtitle">Sismógrafo de Alta Frequência · 33Hz · Protocolo Bitcoin/Lightning</div>
+  </div>
+
+  <!-- Seismograph canvas -->
+  <div class="seismo-wrap">
+    <div class="seismo-label">Canal Delta — Monitoramento de Pulso Energético</div>
+    <canvas id="seismo"></canvas>
+  </div>
+
+  <!-- Status -->
+  <div class="status-panel">
+    <div class="panel-block">
+      <div class="panel-label">LN Address</div>
+      <div class="panel-value" style="font-size:0.75rem">hurtkidney01@<br>walletofsatoshi.com</div>
     </div>
+    <div class="panel-block">
+      <div class="panel-label">Status do Sismógrafo</div>
+      <div class="panel-value" id="poll-status">AGUARDANDO<span class="cursor">_</span></div>
+    </div>
+  </div>
 
-    <script>
-        const DICIONARIO = {
-            "21": "SOBERANIA ALCANÇADA: SISTEMA LABRIOLAG 25/25 ONLINE"
-        };
+  <!-- Main message display -->
+  <div class="main-message" id="mainMsg">
+    <div class="status-text" id="statusText">AGUARDANDO PULSO ENERGÉTICO</div>
+    <div class="status-sub" id="statusSub">Envie Sats para ativar a interface · 33Hz polling ativo</div>
+  </div>
 
-        // Função para simular o recebimento (A ponte real usará LNURL/LNBits)
-        function gerarFatura(valor) {
-            const statusDiv = document.getElementById('status');
-            const qrcodeDiv = document.getElementById('qrcode');
-            const logDiv = document.getElementById('log-area');
+  <!-- Amount trigger buttons -->
+  <div class="amount-grid">
+    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com?amount=1000" id="btn1">
+      <span class="sat-num">1</span>
+      <span class="sat-label">Sat · Módulo</span>
+    </a>
+    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com?amount=21000" id="btn21">
+      <span class="sat-num">21</span>
+      <span class="sat-label">Sats · Soberania</span>
+    </a>
+    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com" id="btnCustom">
+      <span class="sat-num">∞</span>
+      <span class="sat-label">Valor Livre</span>
+    </a>
+  </div>
 
-            statusDiv.innerText = `AGUARDANDO ${valor} SATS DA BIPA...`;
-            logDiv.innerText = "QR Code Gerado. Aponte a câmera e envie.";
+  <!-- Log terminal -->
+  <div class="log-wrap">
+    <div class="log-label">Log de Sistema — LabNet v001</div>
+    <div id="log-output"></div>
+  </div>
 
-            // Gerar QR Code Visual (Simulação do Endereço de Pagamento)
-            const qr = qrcode(0, 'M');
-            qr.addData(`lightning:hurtkidney01@walletofsatoshi.com?amount=${valor}`);
-            qr.make();
-            qrcodeDiv.innerHTML = qr.createImgTag(5);
+  <div class="footer">
+    Interface de Valor · Energia → Instrução → Renderização · Sr. Labriolag · LabNet Log v001
+  </div>
 
-            // MOTOR DE ESCUTA 0.03s (Simulando o Webhook de Confirmação)
-            let tempo = 0;
-            const sismografo = setInterval(() => {
-                tempo += 0.03;
-                // No sistema real, aqui o script checa o status da Invoice via API
-                // Para o teste do Sr. Labriolag agora, ele aguarda o 'OK' visual
-            }, 30);
+</div>
 
-            // SIMULAÇÃO DE SUCESSO APÓS PAGAMENTO (Para teste de interface)
-            // No Log v002, usaremos o 'EventSource' para ser 100% automático
-            console.log("Sistema em escuta ultra-rápida...");
-        }
+<script>
+// ═══════════════════════════════════════════════
+// LabNet v001 — Sismógrafo Lightning 33Hz
+// ═══════════════════════════════════════════════
 
-        function ativarSucesso(sats) {
-            document.body.style.background = "#d4af37";
-            document.body.style.color = "#000";
-            document.getElementById('status').innerText = "⚡ ENERGIA RECONHECIDA! ⚡";
-            document.getElementById('log-area').innerText = DICIONARIO[sats];
-            document.getElementById('qrcode').style.display = "none";
-        }
-    </script>
+const CONFIG = {
+  LN_ADDRESS: 'hurtkidney01@walletofsatoshi.com',
+  INTERVAL_MS: 30,          // 33Hz
+  POLL_LN_MS: 8000,         // Checar LNURL a cada 8s (limite de rate)
+  LNURL_VERIFY_DOMAIN: 'walletofsatoshi.com',
+};
+
+const DICIONARIO = {
+  1:  'MÓDULO ATIVADO',
+  21: 'SOBERANIA ALCANÇADA',
+};
+
+// ─── State ───────────────────────────────────────
+let state = {
+  activated: false,
+  lastPaymentHash: null,
+  lastAmount: null,
+  tickCount: 0,
+  lnurlData: null,
+  lastVerifyCheck: 0,
+  wavePhase: 0,
+  signalAmplitude: 0.3,
+  targetAmplitude: 0.3,
+};
+
+// ─── DOM ─────────────────────────────────────────
+const body        = document.body;
+const statusText  = document.getElementById('statusText');
+const statusSub   = document.getElementById('statusSub');
+const pollStatus  = document.getElementById('poll-status');
+const mainMsg     = document.getElementById('mainMsg');
+const logOutput   = document.getElementById('log-output');
+const pulseRing   = document.getElementById('pulseRing');
+
+// ─── Logger ───────────────────────────────────────
+function log(msg) {
+  const ts = new Date().toISOString().substr(11, 8);
+  const el = document.createElement('div');
+  el.textContent = `[${ts}] ${msg}`;
+  logOutput.appendChild(el);
+  logOutput.scrollTop = logOutput.scrollHeight;
+  // Keep last 50 lines
+  while (logOutput.children.length > 50) logOutput.removeChild(logOutput.firstChild);
+}
+
+// ─── Seismograph Canvas ───────────────────────────
+const canvas = document.getElementById('seismo');
+const ctx    = canvas.getContext('2d');
+const waveHistory = new Float32Array(600).fill(0);
+let waveIdx = 0;
+
+function resizeCanvas() {
+  canvas.width  = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function drawSeismo() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.strokeStyle = state.activated
+    ? 'rgba(0,0,0,0.1)'
+    : 'rgba(0,255,157,0.07)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += W / 10) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+  // Wave
+  const color = state.activated ? '#000' : '#00ff9d';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5 * window.devicePixelRatio;
+  ctx.shadowBlur  = state.activated ? 0 : 8;
+  ctx.shadowColor = color;
+  ctx.beginPath();
+
+  const len = waveHistory.length;
+  for (let i = 0; i < len; i++) {
+    const xi = (i / len) * W;
+    const yi = H/2 + waveHistory[(waveIdx + i) % len] * (H/2 - 4);
+    i === 0 ? ctx.moveTo(xi, yi) : ctx.lineTo(xi, yi);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+// ─── LNURL-pay resolve ───────────────────────────
+async function resolveLNAddress() {
+  const [user, domain] = CONFIG.LN_ADDRESS.split('@');
+  const url = `https://${domain}/.well-known/lnurlp/${user}`;
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    state.lnurlData = d;
+    log(`LNURL resolvido: ${d.callback ? 'OK' : 'FALHOU'}`);
+    if (d.commentAllowed) log(`Comentário permitido: ${d.commentAllowed} chars`);
+    return d;
+  } catch(e) {
+    log(`Erro ao resolver LN Address: ${e.message}`);
+    return null;
+  }
+}
+
+// ─── LNURL-verify polling ────────────────────────
+// WalletOfSatoshi expõe endpoint de verify para alguns endereços.
+// Fallback: monitoramos via verificação de metadata do callback.
+async function checkLNURLVerify() {
+  if (!state.lnurlData) {
+    await resolveLNAddress();
+    return;
+  }
+
+  // Tenta endpoint verify padrão
+  const [user, domain] = CONFIG.LN_ADDRESS.split('@');
+  const verifyUrl = `https://${domain}/.well-known/lnurlp/${user}/verify`;
+
+  try {
+    const r = await fetch(verifyUrl);
+    if (r.ok) {
+      const d = await r.json();
+      log(`Verify check: status=${d.settled ?? 'n/a'} hash=${d.pr?.substr(0,12) ?? 'n/a'}...`);
+
+      if (d.settled && d.pr !== state.lastPaymentHash) {
+        state.lastPaymentHash = d.pr;
+        handlePaymentDetected(d.amount ? Math.round(d.amount / 1000) : null);
+        return;
+      }
+    }
+  } catch(e) {
+    // Endpoint não disponível, fallback silencioso
+  }
+
+  // Fallback: Mempool.space LN node lookup não aplicável a LN Address
+  // Indicamos ao usuário que o sistema aguarda
+  pollStatus.innerHTML = 'MONITORANDO<span class="cursor">_</span>';
+}
+
+// ─── Payment handler ─────────────────────────────
+function handlePaymentDetected(amountSats) {
+  state.activated = true;
+  state.targetAmplitude = 1.0;
+  state.lastAmount = amountSats;
+
+  // Lookup dicionário
+  const msg = amountSats && DICIONARIO[amountSats]
+    ? DICIONARIO[amountSats]
+    : amountSats
+      ? `${amountSats} SAT${amountSats > 1 ? 'S' : ''} RECEBIDO`
+      : 'PAGAMENTO DETECTADO';
+
+  // Update UI
+  body.classList.add('ACTIVATED');
+  statusText.textContent = msg;
+  statusSub.textContent  = amountSats
+    ? `${amountSats} sat${amountSats > 1 ? 's' : ''} transmutados em instrução de renderização`
+    : 'Pulso energético detectado — interface transmutada';
+
+  mainMsg.classList.add('flash');
+  setTimeout(() => mainMsg.classList.remove('flash'), 600);
+
+  // Pulse ring
+  pulseRing.classList.remove('fire');
+  void pulseRing.offsetWidth;
+  pulseRing.classList.add('fire');
+
+  log(`⚡ PAGAMENTO DETECTADO${amountSats ? ` — ${amountSats} sat(s)` : ''}`);
+  log(`DICIONÁRIO → ${msg}`);
+  log(`INTERFACE TRANSMUTADA → background #d4af37`);
+
+  pollStatus.innerHTML = 'ATIVADO ⚡';
+}
+
+// ─── Demo / Test ─────────────────────────────────
+// Exposição global para testes via console: labnet.simulate(21)
+window.labnet = {
+  simulate: (sats) => {
+    log(`[SIMULAÇÃO] Disparando pagamento de ${sats} sat(s)...`);
+    handlePaymentDetected(sats);
+  },
+  reset: () => {
+    state.activated = false;
+    state.targetAmplitude = 0.3;
+    body.classList.remove('ACTIVATED');
+    statusText.textContent = 'AGUARDANDO PULSO ENERGÉTICO';
+    statusSub.textContent  = 'Envie Sats para ativar a interface · 33Hz polling ativo';
+    pollStatus.innerHTML   = 'AGUARDANDO<span class="cursor">_</span>';
+    log('[RESET] Sistema reiniciado');
+  }
+};
+
+// ─── Main 33Hz loop ───────────────────────────────
+function tick() {
+  state.tickCount++;
+  const t = state.tickCount * (CONFIG.INTERVAL_MS / 1000);
+
+  // Smooth amplitude
+  state.signalAmplitude += (state.targetAmplitude - state.signalAmplitude) * 0.05;
+  if (state.activated && state.signalAmplitude > 0.35) {
+    state.targetAmplitude = Math.max(0.35, state.targetAmplitude * 0.992);
+  }
+
+  // Generate wave sample
+  const base = Math.sin(t * 2.1) * 0.3
+             + Math.sin(t * 5.7) * 0.15
+             + Math.sin(t * 11.3) * 0.08;
+
+  const noise = (Math.random() - 0.5) * 0.12;
+  const spike = state.activated && state.signalAmplitude > 0.5
+    ? Math.sin(t * 33) * 0.4
+    : 0;
+
+  waveHistory[waveIdx] = (base + noise + spike) * state.signalAmplitude;
+  waveIdx = (waveIdx + 1) % waveHistory.length;
+
+  drawSeismo();
+
+  // Poll LN every 8s
+  const now = Date.now();
+  if (now - state.lastVerifyCheck > CONFIG.POLL_LN_MS) {
+    state.lastVerifyCheck = now;
+    checkLNURLVerify();
+  }
+}
+
+// ─── Init ─────────────────────────────────────────
+log('LabNet v001 inicializado');
+log(`Monitorando: ${CONFIG.LN_ADDRESS}`);
+log(`Frequência: ${Math.round(1000/CONFIG.INTERVAL_MS)}Hz (${CONFIG.INTERVAL_MS}ms)`);
+log('Use labnet.simulate(1) ou labnet.simulate(21) para testar');
+log('Aguardando resolução de LN Address...');
+
+resolveLNAddress();
+setInterval(tick, CONFIG.INTERVAL_MS);
+</script>
 </body>
 </html>
