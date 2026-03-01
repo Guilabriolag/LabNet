@@ -3,151 +3,127 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LABRIOLAGame — Soberania Real</title>
+<title>LABRIOLAGame — Validação Manual</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
     :root { --gold: #d4af37; --neon: #00ff9d; --bg: #000; }
     body { margin:0; font-family: 'Orbitron', sans-serif; background: var(--bg); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; overflow:hidden; }
     
-    /* Monitor LabNet */
-    .monitor { border: 2px solid var(--gold); padding: 20px; border-radius: 15px; background: rgba(10,10,10,0.95); text-align: center; width: 340px; box-shadow: 0 0 40px rgba(212,175,55,0.2); }
-    
-    canvas#seismo { width: 100%; height: 50px; border-bottom: 1px solid rgba(212,175,55,0.3); margin-bottom: 15px; }
-    
+    .monitor { border: 2px solid var(--gold); padding: 25px; border-radius: 15px; background: rgba(10,10,10,0.95); text-align: center; width: 340px; box-shadow: 0 0 40px rgba(212,175,55,0.2); }
     #balance { font-family: 'Share Tech Mono'; color: var(--neon); font-size: 2.2rem; margin: 10px 0; text-shadow: 0 0 10px var(--neon); }
     
     .reels { display:flex; gap:10px; margin:20px 0; justify-content:center; }
     .reel { width:80px; height:100px; background:#050505; border:1px solid var(--gold); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2.5rem; }
 
-    .btn { width: 100%; padding: 18px; font-family: 'Orbitron'; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; transition: 0.2s; }
+    .btn { width: 100%; padding: 18px; font-family: 'Orbitron'; font-weight: 900; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; transition: 0.2s; font-size: 0.9rem; }
     .btn-spin { background: var(--gold); color: #000; box-shadow: 0 4px 0 #8a6d1d; }
-    .btn-spin:disabled { opacity: 0.1; pointer-events: none; }
-    
-    .btn-pay { background: transparent; border: 1px solid var(--neon); color: var(--neon); text-decoration: none; display: block; font-size: 0.9rem; }
-    
-    #status-bar { font-family: 'Share Tech Mono'; font-size: 0.65rem; color: var(--gold); margin-top: 10px; letter-spacing: 1px; }
-    .pulse { animation: pulseAnim 1s infinite; }
-    @keyframes pulseAnim { 50% { opacity: 0.4; } }
+    .btn-spin:disabled { opacity: 0.1; }
+
+    .btn-pay { background: #004422; border: 1px solid var(--neon); color: var(--neon); text-decoration: none; display: block; }
+    .btn-verify { background: var(--neon); color: #000; display: none; } /* Escondido até o pagamento iniciar */
+
+    #status-bar { font-family: 'Share Tech Mono'; font-size: 0.65rem; color: var(--gold); margin-top: 10px; min-height: 15px; }
+    .loading { animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.3; } }
 </style>
 </head>
 <body>
 
 <div class="monitor">
-    <canvas id="seismo"></canvas>
-    <div style="font-size: 0.6rem; opacity: 0.6; letter-spacing: 2px;">PROTOCOLO LABRIOLAG 25/25</div>
+    <div style="font-size: 0.6rem; opacity: 0.6; letter-spacing: 2px; margin-bottom: 10px;">CORE 25/25 — SOBERANIA</div>
     
     <div id="balance">⚡ 0 SATS</div>
     
     <div class="reels">
-        <div class="reel" id="r1">⚡</div>
+        <div class="reel" id="r1">💎</div>
         <div class="reel" id="r2">⚡</div>
-        <div class="reel" id="r3">⚡</div>
+        <div class="reel" id="r3">💰</div>
     </div>
 
-    <button id="spinBtn" class="btn btn-spin" onclick="rodar()" disabled>AGUARDANDO ENERGIA</button>
+    <button id="spinBtn" class="btn btn-spin" onclick="rodar()" disabled>SEM CRÉDITOS</button>
 
-    <a id="payBtn" href="#" class="btn btn-pay" onclick="gerarInvoiceReal(20)">
-        INJETAR 20 SATS (VIA BIPA)
+    <a id="payBtn" href="#" class="btn btn-pay" onclick="fluxoPagamento()">
+        INJETAR 20 SATS (BIPA)
     </a>
 
-    <div id="status-bar">OUVINDO REDE: 33Hz</div>
+    <button id="verifyBtn" class="btn btn-verify" onclick="verificarFatura()">
+        CONFIRMAR PAGAMENTO
+    </button>
+
+    <div id="status-bar">SISTEMA PRONTO</div>
 </div>
 
 <script>
-const CONFIG = {
-    LN_ADDRESS: 'hurtkidney01@walletofsatoshi.com',
-    CHECK_INTERVAL: 2000 // 2 segundos para não sobrecarregar a API
-};
-
 let credits = 0;
-let isChecking = false;
+let verifyUrlGlobal = "";
+const icons = ["💎", "⚡", "💰", "🔥", "👑"];
 
-/* ─── SISMÓGRAFO CANVAS ─── */
-const canvas = document.getElementById('seismo');
-const ctx = canvas.getContext('2d');
-canvas.width = 300; canvas.height = 50;
-let sx = 0;
-
-function draw() {
-    ctx.strokeStyle = isChecking ? '#00ff9d' : '#333';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(sx, 25);
-    sx += 2;
-    let wave = isChecking ? (Math.random()-0.5)*30 : (Math.random()-0.5)*4;
-    ctx.lineTo(sx, 25 + wave);
-    ctx.stroke();
-    if(sx > 300) { sx = 0; ctx.clearRect(0,0,300,50); }
-    requestAnimationFrame(draw);
-}
-draw();
-
-/* ─── MOTOR LNURL REAL ─── */
-async function gerarInvoiceReal(sats) {
+// PASSO 1: GERAR A FATURA E ABRIR A BIPA
+async function fluxoPagamento() {
     const status = document.getElementById('status-bar');
-    status.innerText = "GERANDO FATURA NA REDE...";
+    status.innerText = "GERANDO FATURA...";
     
     try {
-        // 1. Resolve o LN Address para obter o callback
-        const [user, domain] = CONFIG.LN_ADDRESS.split('@');
-        const lnurlResponse = await fetch(`https://${domain}/.well-known/lnurlp/${user}`);
-        const lnurlData = await lnurlResponse.json();
+        const lnAddress = 'hurtkidney01@walletofsatoshi.com';
+        const [user, domain] = lnAddress.split('@');
         
-        // 2. Solicita a Invoice (BOLT11)
-        const callbackUrl = `${lnurlData.callback}?amount=${sats * 1000}`; // msats
-        const invoiceResponse = await fetch(callbackUrl);
-        const invoiceData = await invoiceResponse.json();
+        // Busca o callback do seu LN Address
+        const res = await fetch(`https://${domain}/.well-known/lnurlp/${user}`);
+        const data = await res.json();
         
-        const pr = invoiceData.pr; // A fatura real
-        const verifyUrl = invoiceData.verify; // O link de verificação
+        // Pede invoice de 20 sats (20000 msats)
+        const resInvoice = await fetch(`${data.callback}?amount=20000`);
+        const invData = await resInvoice.json();
+        
+        verifyUrlGlobal = invData.verify; // Guarda o link de conferência
 
-        // 3. Abre a Carteira Bipa/Satoshi
-        window.location.href = `lightning:${pr}`;
-        
-        // 4. Inicia a Escuta do Sismógrafo
-        iniciarEscuta(verifyUrl);
+        // Abre a Bipa/Satoshi
+        window.location.href = `lightning:${invData.pr}`;
 
+        // Troca os botões
+        document.getElementById('payBtn').style.display = 'none';
+        document.getElementById('verifyBtn').style.display = 'block';
+        status.innerText = "PAGUE NA BIPA E CLIQUE EM CONFIRMAR";
+        
     } catch (e) {
-        status.innerText = "ERRO DE CONEXÃO. TENTE NOVAMENTE.";
+        status.innerText = "ERRO DE CONEXÃO";
         console.error(e);
     }
 }
 
-function iniciarEscuta(urlVerificacao) {
-    isChecking = true;
+// PASSO 2: BOTÃO MANUAL PARA ATUALIZAR O SALDO
+async function verificarFatura() {
+    if (!verifyUrlGlobal) return;
+    
     const status = document.getElementById('status-bar');
-    status.innerText = "SISMÓGRAFO: AGUARDANDO CONFIRMAÇÃO...";
-    status.classList.add('pulse');
+    status.innerText = "CONSULTANDO REDE LIGHTNING...";
+    status.classList.add('loading');
 
-    const poll = setInterval(async () => {
-        try {
-            const r = await fetch(urlVerificacao);
-            const data = await r.json();
+    try {
+        const res = await fetch(verifyUrlGlobal);
+        const data = await res.json();
 
-            // O MOMENTO DA VERDADE: A rede diz que o Sr. Labriolag pagou
-            if (data.settled === true) {
-                clearInterval(poll);
-                ativarCreditos();
-            }
-        } catch (e) {
-            console.log("Aguardando propagação...");
+        if (data.settled === true) {
+            // SUCESSO!
+            credits += 20;
+            document.getElementById('balance').innerText = `⚡ ${credits} SATS`;
+            document.getElementById('spinBtn').disabled = false;
+            document.getElementById('spinBtn').innerText = "GIRAR SLOTS";
+            
+            // Volta o botão de injetar para novos depósitos
+            document.getElementById('verifyBtn').style.display = 'none';
+            document.getElementById('payBtn').style.display = 'block';
+            
+            status.innerText = "PAGAMENTO CONFIRMADO! +20 SATS";
+            status.classList.remove('loading');
+            alert("Sats reconhecidos na conta!");
+        } else {
+            status.innerText = "PAGAMENTO AINDA NÃO DETECTADO.";
+            status.classList.remove('loading');
         }
-    }, CONFIG.CHECK_INTERVAL);
-}
-
-function ativarCreditos() {
-    isChecking = false;
-    credits += 20;
-    document.getElementById('balance').innerText = `⚡ ${credits} SATS`;
-    document.getElementById('spinBtn').disabled = false;
-    document.getElementById('spinBtn').innerText = "GIRAR (1 SAT)";
-    
-    const status = document.getElementById('status-bar');
-    status.innerText = "PULSO CONFIRMADO! CRÉDITOS LIBERADOS.";
-    status.classList.remove('pulse');
-    
-    // Efeito Visual Gold
-    document.body.style.background = "#d4af37";
-    setTimeout(() => { document.body.style.background = "#000"; }, 800);
+    } catch (e) {
+        status.innerText = "ERRO AO VERIFICAR. TENTE NOVAMENTE.";
+    }
 }
 
 function rodar() {
@@ -157,10 +133,9 @@ function rodar() {
     
     if(credits <= 0) {
         document.getElementById('spinBtn').disabled = true;
-        document.getElementById('spinBtn').innerText = "SEM ENERGIA";
+        document.getElementById('spinBtn').innerText = "SEM CRÉDITOS";
     }
 
-    const icons = ["💎", "⚡", "💰", "🔥", "👑"];
     const r1 = icons[Math.floor(Math.random()*icons.length)];
     const r2 = icons[Math.floor(Math.random()*icons.length)];
     const r3 = icons[Math.floor(Math.random()*icons.length)];
@@ -172,7 +147,7 @@ function rodar() {
     if(r1 === r2 && r2 === r3) {
         credits += 50;
         document.getElementById('balance').innerText = `⚡ ${credits} SATS`;
-        alert("JACKPOT! +50 SATS");
+        alert("💎 JACKPOT! +50 SATS 💎");
     }
 }
 </script>
