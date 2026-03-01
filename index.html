@@ -3,632 +3,704 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LabNet v001 — Interface de Valor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<title>LABRIOLAGame — CORE 25/25</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0a;
-    --fg: #00ff9d;
-    --accent: #00cc7a;
-    --dim: #003322;
-    --gold: #d4af37;
-    --gold-dim: #7a6010;
-    --border: #00ff9d33;
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-display: 'Orbitron', sans-serif;
-  }
+:root {
+  --gold: #d4af37;
+  --gold-dim: #8a6d1d;
+  --neon: #00ff9d;
+  --neon-dim: #00994d;
+  --red: #ff3b3b;
+  --bg: #05050a;
+  --panel: #080810;
+  --border: rgba(212,175,55,0.35);
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    background: var(--bg);
-    color: var(--fg);
-    font-family: var(--font-mono);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    transition: background 0.6s ease, color 0.6s ease;
-    position: relative;
-  }
+body {
+  font-family: 'Orbitron', sans-serif;
+  background: var(--bg);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
 
-  /* Grid scanlines */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,255,157,0.015) 2px,
-      rgba(0,255,157,0.015) 4px
-    );
-    pointer-events: none;
-    z-index: 999;
-  }
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(212,175,55,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,175,55,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
 
-  /* Noise overlay */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    opacity: 0.04;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 998;
-  }
+/* Ambient glow */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,255,157,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
 
-  body.ACTIVATED {
-    --bg: #d4af37;
-    --fg: #000;
-    --accent: #1a0d00;
-    --dim: #b8962e;
-    --border: #00000033;
-    background: var(--bg);
-    color: var(--fg);
-  }
+/* ── MACHINE ── */
+.machine {
+  position: relative;
+  width: 360px;
+}
 
-  body.ACTIVATED::before {
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-    );
-  }
+.machine-top {
+  background: linear-gradient(180deg, #1a1400 0%, var(--panel) 100%);
+  border: 2px solid var(--gold);
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  padding: 16px 24px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
 
-  .container {
-    width: min(720px, 95vw);
-    position: relative;
-    z-index: 1;
-  }
+.machine-top::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--neon), var(--gold), transparent);
+  animation: scan 3s linear infinite;
+}
 
-  /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
+@keyframes scan {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
 
-  .logo {
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 5vw, 3rem);
-    font-weight: 900;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    line-height: 1;
-  }
+.logo-line {
+  font-size: 0.5rem;
+  letter-spacing: 5px;
+  color: rgba(212,175,55,0.5);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
 
-  .logo span {
-    color: var(--gold);
-  }
-  body.ACTIVATED .logo span { color: #000; }
+.logo {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  background: linear-gradient(135deg, var(--gold), #fff8d6, var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 12px rgba(212,175,55,0.5));
+}
 
-  .subtitle {
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    opacity: 0.5;
-    margin-top: 0.4rem;
-    text-transform: uppercase;
-  }
+.machine-body {
+  background: var(--panel);
+  border-left: 2px solid var(--gold);
+  border-right: 2px solid var(--gold);
+  padding: 20px 24px;
+}
 
-  /* Seismograph */
-  .seismo-wrap {
-    border: 1px solid var(--border);
-    padding: 1.2rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    background: rgba(0,255,157,0.02);
-  }
-  body.ACTIVATED .seismo-wrap { background: rgba(0,0,0,0.05); }
+.machine-bottom {
+  background: linear-gradient(180deg, var(--panel) 0%, #0a0a18 100%);
+  border: 2px solid var(--gold);
+  border-top: 1px solid rgba(212,175,55,0.2);
+  border-radius: 0 0 18px 18px;
+  padding: 16px 24px 22px;
+  text-align: center;
+}
 
-  .seismo-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    opacity: 0.4;
-    margin-bottom: 0.6rem;
-    text-transform: uppercase;
-  }
+/* ── BALANCE ── */
+.balance-wrap {
+  background: #000;
+  border: 1px solid var(--neon-dim);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-  canvas#seismo {
-    width: 100%;
-    height: 80px;
-    display: block;
-  }
+.balance-label {
+  font-family: 'Share Tech Mono';
+  font-size: 0.55rem;
+  color: rgba(0,255,157,0.5);
+  letter-spacing: 2px;
+}
 
-  /* Status Panel */
-  .status-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
+#balance {
+  font-family: 'Share Tech Mono';
+  font-size: 1.6rem;
+  color: var(--neon);
+  text-shadow: 0 0 15px var(--neon), 0 0 30px rgba(0,255,157,0.3);
+  transition: all 0.3s;
+}
 
-  .panel-block {
-    border: 1px solid var(--border);
-    padding: 1rem 1.2rem;
-    background: rgba(0,255,157,0.02);
-  }
-  body.ACTIVATED .panel-block { background: rgba(0,0,0,0.05); }
+#balance.pulse {
+  animation: balancePulse 0.4s ease;
+}
 
-  .panel-label {
-    font-size: 0.55rem;
-    letter-spacing: 0.25em;
-    opacity: 0.4;
-    text-transform: uppercase;
-    margin-bottom: 0.4rem;
-  }
+@keyframes balancePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); color: #fff; }
+}
 
-  .panel-value {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    word-break: break-all;
-    transition: color 0.4s;
-  }
+/* ── REELS ── */
+.reels-container {
+  position: relative;
+  background: #000;
+  border: 1px solid rgba(212,175,55,0.3);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
 
-  /* Main message */
-  .main-message {
-    border: 1px solid var(--border);
-    padding: 1.8rem;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    min-height: 110px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,255,157,0.02);
-    position: relative;
-    overflow: hidden;
-  }
-  body.ACTIVATED .main-message { background: rgba(0,0,0,0.05); }
+.reels-container::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 74px;
+  background: rgba(212,175,55,0.04);
+  border-top: 1px solid rgba(212,175,55,0.2);
+  border-bottom: 1px solid rgba(212,175,55,0.2);
+  pointer-events: none;
+}
 
-  .main-message::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, var(--fg), transparent);
-    opacity: 0;
-    transform: scaleX(0);
-    transition: opacity 0.3s, transform 0.5s;
-  }
-  .main-message.flash::before {
-    opacity: 0.05;
-    transform: scaleX(1);
-    animation: scanFlash 0.5s ease forwards;
-  }
-  @keyframes scanFlash {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
+.reels {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  position: relative;
+}
 
-  .status-text {
-    font-family: var(--font-display);
-    font-size: clamp(1rem, 3vw, 1.6rem);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    transition: all 0.4s;
-  }
+.reel-wrap {
+  flex: 1;
+  height: 80px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #030308;
+  border: 1px solid rgba(212,175,55,0.15);
+  position: relative;
+}
 
-  .status-sub {
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    opacity: 0.5;
-    margin-top: 0.5rem;
-    text-transform: uppercase;
-  }
+.reel-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.05s linear;
+}
 
-  /* Amount buttons */
-  .amount-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
+.reel-symbol {
+  height: 80px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  flex-shrink: 0;
+}
 
-  .amt-btn {
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--fg);
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    padding: 0.8rem 0.5rem;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    display: block;
-    transition: all 0.2s;
-    text-transform: uppercase;
-  }
-  .amt-btn:hover {
-    background: var(--fg);
-    color: var(--bg);
-  }
-  .amt-btn .sat-num {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    display: block;
-    margin-bottom: 0.2rem;
-  }
-  .amt-btn .sat-label {
-    font-size: 0.55rem;
-    opacity: 0.6;
-    letter-spacing: 0.2em;
-  }
+.reel-win .reel-wrap {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(212,175,55,0.4), inset 0 0 20px rgba(212,175,55,0.05);
+  animation: winReel 0.6s ease infinite alternate;
+}
 
-  /* Log terminal */
-  .log-wrap {
-    border: 1px solid var(--border);
-    padding: 1rem 1.2rem;
-    background: rgba(0,0,0,0.3);
-  }
-  body.ACTIVATED .log-wrap { background: rgba(0,0,0,0.1); }
+@keyframes winReel {
+  from { box-shadow: 0 0 20px rgba(212,175,55,0.4); }
+  to { box-shadow: 0 0 40px rgba(212,175,55,0.8), inset 0 0 20px rgba(212,175,55,0.1); }
+}
 
-  .log-label {
-    font-size: 0.55rem;
-    letter-spacing: 0.25em;
-    opacity: 0.4;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-  }
+/* ── JACKPOT OVERLAY ── */
+.jackpot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 100;
+}
 
-  #log-output {
-    font-size: 0.7rem;
-    line-height: 1.7;
-    height: 100px;
-    overflow-y: auto;
-    opacity: 0.7;
-  }
-  #log-output div::before {
-    content: '> ';
-    opacity: 0.4;
-  }
+.jackpot-overlay.show {
+  display: flex;
+  animation: fadeIn 0.3s ease;
+}
 
-  /* Footer */
-  .footer {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    opacity: 0.3;
-    text-transform: uppercase;
-  }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-  /* Blink cursor */
-  @keyframes blink { 50% { opacity: 0; } }
-  .cursor { animation: blink 1s step-end infinite; }
+.jackpot-text {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--gold), #fff, var(--neon), var(--gold));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 1.5s linear infinite;
+  margin-bottom: 10px;
+  text-align: center;
+}
 
-  /* Pulse ring on activation */
-  .pulse-ring {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--gold);
-    pointer-events: none;
-    opacity: 0;
-    z-index: 997;
-  }
-  .pulse-ring.fire {
-    animation: pulseExpand 0.8s ease-out forwards;
-  }
-  @keyframes pulseExpand {
-    0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%,-50%) scale(80); }
-  }
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.jackpot-sub {
+  font-family: 'Share Tech Mono';
+  color: var(--neon);
+  font-size: 1rem;
+  margin-bottom: 24px;
+  letter-spacing: 3px;
+}
+
+.jackpot-close {
+  font-family: 'Orbitron';
+  font-weight: 700;
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+}
+
+/* Particles */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  font-size: 1.5rem;
+  animation: particleFall 2s ease-out forwards;
+  z-index: 99;
+}
+
+@keyframes particleFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 16px;
+  font-family: 'Orbitron';
+  font-weight: 900;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  transition: all 0.15s;
+  margin-bottom: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  border-radius: 8px;
+}
+
+.btn-spin {
+  background: linear-gradient(135deg, #c9a227, var(--gold), #f0cc60);
+  color: #000;
+  box-shadow: 0 5px 0 var(--gold-dim), 0 0 20px rgba(212,175,55,0.3);
+  font-size: 0.9rem;
+}
+
+.btn-spin:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 var(--gold-dim), 0 0 30px rgba(212,175,55,0.5);
+}
+
+.btn-spin:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--gold-dim);
+}
+
+.btn-spin:disabled {
+  background: #1a1a1a;
+  color: #444;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-spin.spinning {
+  animation: spinPulse 0.4s ease infinite alternate;
+}
+
+@keyframes spinPulse {
+  from { box-shadow: 0 5px 0 var(--gold-dim), 0 0 20px rgba(212,175,55,0.3); }
+  to { box-shadow: 0 5px 0 var(--gold-dim), 0 0 40px rgba(212,175,55,0.6); }
+}
+
+.btn-pay {
+  background: transparent;
+  border: 1px solid var(--neon-dim);
+  color: var(--neon);
+  text-decoration: none;
+  display: block;
+  text-align: center;
+  line-height: 1;
+}
+
+.btn-pay:hover { border-color: var(--neon); box-shadow: 0 0 15px rgba(0,255,157,0.2); }
+
+.btn-verify {
+  background: transparent;
+  border: 1px solid var(--neon);
+  color: var(--neon);
+  display: none;
+  animation: verifyPulse 1.5s ease infinite;
+}
+
+@keyframes verifyPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,255,157,0.3); }
+  50% { box-shadow: 0 0 20px rgba(0,255,157,0.6); }
+}
+
+/* ── STATUS BAR ── */
+.status-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  min-height: 18px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--neon);
+}
+
+.status-dot.error { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.status-dot.loading { animation: dotBlink 0.8s infinite; }
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.1; }
+}
+
+#status-bar {
+  font-family: 'Share Tech Mono';
+  font-size: 0.6rem;
+  color: rgba(212,175,55,0.7);
+  letter-spacing: 1px;
+}
+
+/* ── FOOTER ORNAMENT ── */
+.footer-ornament {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.orn-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(212,175,55,0.3)); }
+.orn-line:last-child { background: linear-gradient(270deg, transparent, rgba(212,175,55,0.3)); }
+.orn-text { font-size: 0.45rem; letter-spacing: 3px; color: rgba(212,175,55,0.4); }
+
+/* Corner decorations */
+.corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+}
+
+.corner-tl { top: -1px; left: -1px; border-top: 2px solid var(--neon); border-left: 2px solid var(--neon); }
+.corner-tr { top: -1px; right: -1px; border-top: 2px solid var(--neon); border-right: 2px solid var(--neon); }
+.corner-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--neon); border-left: 2px solid var(--neon); }
+.corner-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--neon); border-right: 2px solid var(--neon); }
+
+/* Bet info row */
+.bet-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-family: 'Share Tech Mono';
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 1px;
+}
+
+.bet-info span { color: rgba(212,175,55,0.6); }
 </style>
 </head>
 <body>
 
-<div class="pulse-ring" id="pulseRing"></div>
+<!-- JACKPOT OVERLAY -->
+<div class="jackpot-overlay" id="jackpotOverlay">
+  <div class="jackpot-text">💎 JACKPOT 💎</div>
+  <div class="jackpot-sub">+ 50 SATS CREDITADOS</div>
+  <button class="jackpot-close" onclick="closeJackpot()">RECOLHER GANHOS</button>
+</div>
 
-<div class="container">
-
-  <div class="header">
-    <div class="logo">Lab<span>Net</span> v001</div>
-    <div class="subtitle">Sismógrafo de Alta Frequência · 33Hz · Protocolo Bitcoin/Lightning</div>
+<div class="machine">
+  <!-- TOP -->
+  <div class="machine-top">
+    <div class="logo-line">SOBERANIA FINANCEIRA</div>
+    <div class="logo">LABRIOLA<span style="color:var(--neon);-webkit-text-fill-color:var(--neon)">GAME</span></div>
+    <div style="font-size:0.45rem;letter-spacing:3px;color:rgba(255,255,255,0.2);margin-top:4px;">CORE 25 / 25 — LIGHTNING NETWORK</div>
   </div>
 
-  <!-- Seismograph canvas -->
-  <div class="seismo-wrap">
-    <div class="seismo-label">Canal Delta — Monitoramento de Pulso Energético</div>
-    <canvas id="seismo"></canvas>
-  </div>
+  <!-- BODY -->
+  <div class="machine-body">
 
-  <!-- Status -->
-  <div class="status-panel">
-    <div class="panel-block">
-      <div class="panel-label">LN Address</div>
-      <div class="panel-value" style="font-size:0.75rem">hurtkidney01@<br>walletofsatoshi.com</div>
+    <!-- Balance -->
+    <div class="balance-wrap">
+      <div class="balance-label">SALDO ATUAL</div>
+      <div id="balance">⚡ 0 SATS</div>
     </div>
-    <div class="panel-block">
-      <div class="panel-label">Status do Sismógrafo</div>
-      <div class="panel-value" id="poll-status">AGUARDANDO<span class="cursor">_</span></div>
+
+    <!-- Reels -->
+    <div class="reels-container">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+
+      <div class="reels" id="reels">
+        <div class="reel-wrap" id="rw1"><div class="reel-strip" id="rs1"><div class="reel-symbol">💎</div></div></div>
+        <div class="reel-wrap" id="rw2"><div class="reel-strip" id="rs2"><div class="reel-symbol">⚡</div></div></div>
+        <div class="reel-wrap" id="rw3"><div class="reel-strip" id="rs3"><div class="reel-symbol">💰</div></div></div>
+      </div>
+    </div>
+
+    <!-- Bet info -->
+    <div class="bet-info">
+      <div>APOSTA: <span>1 SAT / GIRO</span></div>
+      <div>JACKPOT: <span>50 SATS</span></div>
+      <div>CHANCE: <span>1/25</span></div>
+    </div>
+
+    <!-- Spin button -->
+    <button id="spinBtn" class="btn btn-spin" onclick="rodar()" disabled>SEM CRÉDITOS</button>
+
+  </div>
+
+  <!-- BOTTOM -->
+  <div class="machine-bottom">
+
+    <a id="payBtn" href="#" class="btn btn-pay" onclick="fluxoPagamento(); return false;">
+      ⚡ INJETAR 20 SATS VIA BIPA
+    </a>
+
+    <button id="verifyBtn" class="btn btn-verify" onclick="verificarFatura()">
+      ✓ CONFIRMAR PAGAMENTO
+    </button>
+
+    <div class="status-wrap">
+      <div class="status-dot" id="statusDot"></div>
+      <div id="status-bar">SISTEMA PRONTO — AGUARDANDO DEPÓSITO</div>
+    </div>
+
+    <div class="footer-ornament">
+      <div class="orn-line"></div>
+      <div class="orn-text">BITCOIN ONLY</div>
+      <div class="orn-line"></div>
     </div>
   </div>
-
-  <!-- Main message display -->
-  <div class="main-message" id="mainMsg">
-    <div class="status-text" id="statusText">AGUARDANDO PULSO ENERGÉTICO</div>
-    <div class="status-sub" id="statusSub">Envie Sats para ativar a interface · 33Hz polling ativo</div>
-  </div>
-
-  <!-- Amount trigger buttons -->
-  <div class="amount-grid">
-    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com?amount=1000" id="btn1">
-      <span class="sat-num">1</span>
-      <span class="sat-label">Sat · Módulo</span>
-    </a>
-    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com?amount=21000" id="btn21">
-      <span class="sat-num">21</span>
-      <span class="sat-label">Sats · Soberania</span>
-    </a>
-    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com" id="btnCustom">
-      <span class="sat-num">∞</span>
-      <span class="sat-label">Valor Livre</span>
-    </a>
-  </div>
-
-  <!-- Log terminal -->
-  <div class="log-wrap">
-    <div class="log-label">Log de Sistema — LabNet v001</div>
-    <div id="log-output"></div>
-  </div>
-
-  <div class="footer">
-    Interface de Valor · Energia → Instrução → Renderização · Sr. Labriolag · LabNet Log v001
-  </div>
-
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
-// LabNet v001 — Sismógrafo Lightning 33Hz
-// ═══════════════════════════════════════════════
+let credits = 0;
+let verifyUrlGlobal = "";
+let isSpinning = false;
+const icons = ["💎", "⚡", "💰", "🔥", "👑"];
 
-const CONFIG = {
-  LN_ADDRESS: 'hurtkidney01@walletofsatoshi.com',
-  INTERVAL_MS: 30,          // 33Hz
-  POLL_LN_MS: 8000,         // Checar LNURL a cada 8s (limite de rate)
-  LNURL_VERIFY_DOMAIN: 'walletofsatoshi.com',
-};
-
-const DICIONARIO = {
-  1:  'MÓDULO ATIVADO',
-  21: 'SOBERANIA ALCANÇADA',
-};
-
-// ─── State ───────────────────────────────────────
-let state = {
-  activated: false,
-  lastPaymentHash: null,
-  lastAmount: null,
-  tickCount: 0,
-  lnurlData: null,
-  lastVerifyCheck: 0,
-  wavePhase: 0,
-  signalAmplitude: 0.3,
-  targetAmplitude: 0.3,
-};
-
-// ─── DOM ─────────────────────────────────────────
-const body        = document.body;
-const statusText  = document.getElementById('statusText');
-const statusSub   = document.getElementById('statusSub');
-const pollStatus  = document.getElementById('poll-status');
-const mainMsg     = document.getElementById('mainMsg');
-const logOutput   = document.getElementById('log-output');
-const pulseRing   = document.getElementById('pulseRing');
-
-// ─── Logger ───────────────────────────────────────
-function log(msg) {
-  const ts = new Date().toISOString().substr(11, 8);
-  const el = document.createElement('div');
-  el.textContent = `[${ts}] ${msg}`;
-  logOutput.appendChild(el);
-  logOutput.scrollTop = logOutput.scrollHeight;
-  // Keep last 50 lines
-  while (logOutput.children.length > 50) logOutput.removeChild(logOutput.firstChild);
+function setStatus(msg, type = 'ok') {
+  const dot = document.getElementById('statusDot');
+  const bar = document.getElementById('status-bar');
+  bar.innerText = msg;
+  dot.className = 'status-dot';
+  if (type === 'error') dot.classList.add('error');
+  if (type === 'loading') dot.classList.add('loading');
 }
 
-// ─── Seismograph Canvas ───────────────────────────
-const canvas = document.getElementById('seismo');
-const ctx    = canvas.getContext('2d');
-const waveHistory = new Float32Array(600).fill(0);
-let waveIdx = 0;
-
-function resizeCanvas() {
-  canvas.width  = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-
-function drawSeismo() {
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
-
-  // Background grid
-  ctx.strokeStyle = state.activated
-    ? 'rgba(0,0,0,0.1)'
-    : 'rgba(0,255,157,0.07)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += W / 10) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+function updateBalance(val, animate = false) {
+  credits = val;
+  const el = document.getElementById('balance');
+  el.innerText = `⚡ ${credits} SATS`;
+  if (animate) {
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+    setTimeout(() => el.classList.remove('pulse'), 400);
   }
-  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-
-  // Wave
-  const color = state.activated ? '#000' : '#00ff9d';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5 * window.devicePixelRatio;
-  ctx.shadowBlur  = state.activated ? 0 : 8;
-  ctx.shadowColor = color;
-  ctx.beginPath();
-
-  const len = waveHistory.length;
-  for (let i = 0; i < len; i++) {
-    const xi = (i / len) * W;
-    const yi = H/2 + waveHistory[(waveIdx + i) % len] * (H/2 - 4);
-    i === 0 ? ctx.moveTo(xi, yi) : ctx.lineTo(xi, yi);
-  }
-  ctx.stroke();
-  ctx.shadowBlur = 0;
+  const spinBtn = document.getElementById('spinBtn');
+  spinBtn.disabled = credits <= 0;
+  spinBtn.innerText = credits > 0 ? '▶ GIRAR SLOTS' : 'SEM CRÉDITOS';
 }
 
-// ─── LNURL-pay resolve ───────────────────────────
-async function resolveLNAddress() {
-  const [user, domain] = CONFIG.LN_ADDRESS.split('@');
-  const url = `https://${domain}/.well-known/lnurlp/${user}`;
-  try {
-    const r = await fetch(url);
-    const d = await r.json();
-    state.lnurlData = d;
-    log(`LNURL resolvido: ${d.callback ? 'OK' : 'FALHOU'}`);
-    if (d.commentAllowed) log(`Comentário permitido: ${d.commentAllowed} chars`);
-    return d;
-  } catch(e) {
-    log(`Erro ao resolver LN Address: ${e.message}`);
-    return null;
-  }
-}
+// ── SPIN ANIMATION ──
+function animateReel(stripId, finalIcon, delay) {
+  return new Promise(resolve => {
+    const strip = document.getElementById(stripId);
+    const TICK = 60;
+    const TICKS = 12 + delay * 4;
+    let count = 0;
 
-// ─── LNURL-verify polling ────────────────────────
-// WalletOfSatoshi expõe endpoint de verify para alguns endereços.
-// Fallback: monitoramos via verificação de metadata do callback.
-async function checkLNURLVerify() {
-  if (!state.lnurlData) {
-    await resolveLNAddress();
-    return;
-  }
-
-  // Tenta endpoint verify padrão
-  const [user, domain] = CONFIG.LN_ADDRESS.split('@');
-  const verifyUrl = `https://${domain}/.well-known/lnurlp/${user}/verify`;
-
-  try {
-    const r = await fetch(verifyUrl);
-    if (r.ok) {
-      const d = await r.json();
-      log(`Verify check: status=${d.settled ?? 'n/a'} hash=${d.pr?.substr(0,12) ?? 'n/a'}...`);
-
-      if (d.settled && d.pr !== state.lastPaymentHash) {
-        state.lastPaymentHash = d.pr;
-        handlePaymentDetected(d.amount ? Math.round(d.amount / 1000) : null);
-        return;
+    const interval = setInterval(() => {
+      const icon = icons[Math.floor(Math.random() * icons.length)];
+      strip.innerHTML = `<div class="reel-symbol">${icon}</div>`;
+      count++;
+      if (count >= TICKS) {
+        clearInterval(interval);
+        strip.innerHTML = `<div class="reel-symbol">${finalIcon}</div>`;
+        resolve();
       }
+    }, TICK);
+  });
+}
+
+async function rodar() {
+  if (credits <= 0 || isSpinning) return;
+  isSpinning = true;
+
+  const spinBtn = document.getElementById('spinBtn');
+  spinBtn.classList.add('spinning');
+  spinBtn.disabled = true;
+  spinBtn.innerText = 'GIRANDO...';
+  document.getElementById('reels').classList.remove('reel-win');
+
+  const newCredits = credits - 1;
+  document.getElementById('balance').innerText = `⚡ ${newCredits} SATS`;
+
+  const r1 = icons[Math.floor(Math.random() * icons.length)];
+  const r2 = icons[Math.floor(Math.random() * icons.length)];
+  const r3 = icons[Math.floor(Math.random() * icons.length)];
+
+  setStatus('ROLANDO...', 'loading');
+
+  await Promise.all([
+    animateReel('rs1', r1, 0),
+    animateReel('rs2', r2, 1),
+    animateReel('rs3', r3, 2),
+  ]);
+
+  credits = newCredits;
+  const isJackpot = (r1 === r2 && r2 === r3);
+
+  if (isJackpot) {
+    credits += 50;
+    document.getElementById('reels').classList.add('reel-win');
+    launchParticles();
+    setTimeout(() => {
+      document.getElementById('jackpotOverlay').classList.add('show');
+    }, 400);
+  }
+
+  updateBalance(credits);
+  setStatus(isJackpot ? '💎 JACKPOT! +50 SATS' : (credits > 0 ? 'BOA SORTE...' : 'SEM CRÉDITOS — RECARREGUE'));
+
+  spinBtn.classList.remove('spinning');
+  isSpinning = false;
+}
+
+function launchParticles() {
+  const emojis = ['💎', '⚡', '🌟', '💰', '✨'];
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = '-30px';
+    p.style.animationDuration = (1.5 + Math.random()) + 's';
+    p.style.animationDelay = (Math.random() * 0.5) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 3000);
+  }
+}
+
+function closeJackpot() {
+  document.getElementById('jackpotOverlay').classList.remove('show');
+}
+
+// ── PAYMENT FLOW ──
+async function fluxoPagamento() {
+  setStatus('GERANDO FATURA LIGHTNING...', 'loading');
+
+  try {
+    const lnAddress = 'hurtkidney01@walletofsatoshi.com';
+    const [user, domain] = lnAddress.split('@');
+
+    const res = await fetch(`https://${domain}/.well-known/lnurlp/${user}`);
+    const data = await res.json();
+
+    const resInvoice = await fetch(`${data.callback}?amount=20000`);
+    const invData = await resInvoice.json();
+
+    verifyUrlGlobal = invData.verify;
+
+    window.location.href = `lightning:${invData.pr}`;
+
+    document.getElementById('payBtn').style.display = 'none';
+    document.getElementById('verifyBtn').style.display = 'block';
+    setStatus('PAGUE NA BIPA E CLIQUE EM CONFIRMAR', 'loading');
+
+  } catch (e) {
+    setStatus('ERRO DE CONEXÃO COM A REDE', 'error');
+    console.error(e);
+  }
+}
+
+async function verificarFatura() {
+  if (!verifyUrlGlobal) return;
+
+  setStatus('CONSULTANDO REDE LIGHTNING...', 'loading');
+
+  try {
+    const res = await fetch(verifyUrlGlobal);
+    const data = await res.json();
+
+    if (data.settled === true) {
+      updateBalance(credits + 20, true);
+
+      document.getElementById('verifyBtn').style.display = 'none';
+      document.getElementById('payBtn').style.display = 'block';
+
+      setStatus('✓ PAGAMENTO CONFIRMADO — +20 SATS');
+      verifyUrlGlobal = '';
+
+      // Flash the balance
+      const el = document.getElementById('balance');
+      el.style.color = '#fff';
+      setTimeout(() => { el.style.color = ''; }, 600);
+
+    } else {
+      setStatus('PAGAMENTO AINDA NÃO DETECTADO', 'error');
     }
-  } catch(e) {
-    // Endpoint não disponível, fallback silencioso
-  }
-
-  // Fallback: Mempool.space LN node lookup não aplicável a LN Address
-  // Indicamos ao usuário que o sistema aguarda
-  pollStatus.innerHTML = 'MONITORANDO<span class="cursor">_</span>';
-}
-
-// ─── Payment handler ─────────────────────────────
-function handlePaymentDetected(amountSats) {
-  state.activated = true;
-  state.targetAmplitude = 1.0;
-  state.lastAmount = amountSats;
-
-  // Lookup dicionário
-  const msg = amountSats && DICIONARIO[amountSats]
-    ? DICIONARIO[amountSats]
-    : amountSats
-      ? `${amountSats} SAT${amountSats > 1 ? 'S' : ''} RECEBIDO`
-      : 'PAGAMENTO DETECTADO';
-
-  // Update UI
-  body.classList.add('ACTIVATED');
-  statusText.textContent = msg;
-  statusSub.textContent  = amountSats
-    ? `${amountSats} sat${amountSats > 1 ? 's' : ''} transmutados em instrução de renderização`
-    : 'Pulso energético detectado — interface transmutada';
-
-  mainMsg.classList.add('flash');
-  setTimeout(() => mainMsg.classList.remove('flash'), 600);
-
-  // Pulse ring
-  pulseRing.classList.remove('fire');
-  void pulseRing.offsetWidth;
-  pulseRing.classList.add('fire');
-
-  log(`⚡ PAGAMENTO DETECTADO${amountSats ? ` — ${amountSats} sat(s)` : ''}`);
-  log(`DICIONÁRIO → ${msg}`);
-  log(`INTERFACE TRANSMUTADA → background #d4af37`);
-
-  pollStatus.innerHTML = 'ATIVADO ⚡';
-}
-
-// ─── Demo / Test ─────────────────────────────────
-// Exposição global para testes via console: labnet.simulate(21)
-window.labnet = {
-  simulate: (sats) => {
-    log(`[SIMULAÇÃO] Disparando pagamento de ${sats} sat(s)...`);
-    handlePaymentDetected(sats);
-  },
-  reset: () => {
-    state.activated = false;
-    state.targetAmplitude = 0.3;
-    body.classList.remove('ACTIVATED');
-    statusText.textContent = 'AGUARDANDO PULSO ENERGÉTICO';
-    statusSub.textContent  = 'Envie Sats para ativar a interface · 33Hz polling ativo';
-    pollStatus.innerHTML   = 'AGUARDANDO<span class="cursor">_</span>';
-    log('[RESET] Sistema reiniciado');
-  }
-};
-
-// ─── Main 33Hz loop ───────────────────────────────
-function tick() {
-  state.tickCount++;
-  const t = state.tickCount * (CONFIG.INTERVAL_MS / 1000);
-
-  // Smooth amplitude
-  state.signalAmplitude += (state.targetAmplitude - state.signalAmplitude) * 0.05;
-  if (state.activated && state.signalAmplitude > 0.35) {
-    state.targetAmplitude = Math.max(0.35, state.targetAmplitude * 0.992);
-  }
-
-  // Generate wave sample
-  const base = Math.sin(t * 2.1) * 0.3
-             + Math.sin(t * 5.7) * 0.15
-             + Math.sin(t * 11.3) * 0.08;
-
-  const noise = (Math.random() - 0.5) * 0.12;
-  const spike = state.activated && state.signalAmplitude > 0.5
-    ? Math.sin(t * 33) * 0.4
-    : 0;
-
-  waveHistory[waveIdx] = (base + noise + spike) * state.signalAmplitude;
-  waveIdx = (waveIdx + 1) % waveHistory.length;
-
-  drawSeismo();
-
-  // Poll LN every 8s
-  const now = Date.now();
-  if (now - state.lastVerifyCheck > CONFIG.POLL_LN_MS) {
-    state.lastVerifyCheck = now;
-    checkLNURLVerify();
+  } catch (e) {
+    setStatus('ERRO AO VERIFICAR — TENTE NOVAMENTE', 'error');
   }
 }
-
-// ─── Init ─────────────────────────────────────────
-log('LabNet v001 inicializado');
-log(`Monitorando: ${CONFIG.LN_ADDRESS}`);
-log(`Frequência: ${Math.round(1000/CONFIG.INTERVAL_MS)}Hz (${CONFIG.INTERVAL_MS}ms)`);
-log('Use labnet.simulate(1) ou labnet.simulate(21) para testar');
-log('Aguardando resolução de LN Address...');
-
-resolveLNAddress();
-setInterval(tick, CONFIG.INTERVAL_MS);
 </script>
 </body>
 </html>
