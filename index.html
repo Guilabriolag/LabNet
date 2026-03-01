@@ -3,632 +3,636 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LabNet v001 — Interface de Valor</title>
+<title>LABRIOLAG — Core 25/25</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
 <style>
-  :root {
-    --bg: #0a0a0a;
-    --fg: #00ff9d;
-    --accent: #00cc7a;
-    --dim: #003322;
-    --gold: #d4af37;
-    --gold-dim: #7a6010;
-    --border: #00ff9d33;
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-display: 'Orbitron', sans-serif;
-  }
+/* ═══ RESET & BASE ═══ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold:     #d4af37;
+  --gold2:    #f0d060;
+  --gold-dim: #6b5010;
+  --bg:       #000;
+  --fg:       #d4af37;
+  --green:    #00ffcc;
+  --border:   rgba(212,175,55,0.35);
+  --mono:     'Share Tech Mono', 'Courier New', monospace;
+  --display:  'Orbitron', var(--mono);
+  --transition: 0.7s cubic-bezier(0.23,1,0.32,1);
+}
 
-  body {
-    background: var(--bg);
-    color: var(--fg);
-    font-family: var(--font-mono);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    transition: background 0.6s ease, color 0.6s ease;
-    position: relative;
-  }
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: background var(--transition), color var(--transition);
+}
 
-  /* Grid scanlines */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,255,157,0.015) 2px,
-      rgba(0,255,157,0.015) 4px
-    );
-    pointer-events: none;
-    z-index: 999;
-  }
+/* Scanlines */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(212,175,55,0.025) 3px, rgba(212,175,55,0.025) 4px
+  );
+  pointer-events: none;
+  z-index: 100;
+  transition: opacity var(--transition);
+}
 
-  /* Noise overlay */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    opacity: 0.04;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 998;
-  }
+body.activated { background: var(--gold); color: #000; }
+body.activated::before { opacity: 0; }
 
-  body.ACTIVATED {
-    --bg: #d4af37;
-    --fg: #000;
-    --accent: #1a0d00;
-    --dim: #b8962e;
-    --border: #00000033;
-    background: var(--bg);
-    color: var(--fg);
-  }
+/* ═══ MONITOR ═══ */
+.monitor {
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  width: min(420px, 94vw);
+  padding: 28px 24px;
+  position: relative;
+  background: rgba(212,175,55,0.03);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  box-shadow: 0 0 40px rgba(212,175,55,0.06), inset 0 0 60px rgba(0,0,0,0.5);
+}
+body.activated .monitor {
+  border-color: rgba(0,0,0,0.3);
+  background: transparent;
+  box-shadow: none;
+}
 
-  body.ACTIVATED::before {
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-    );
-  }
+/* Corner decorations */
+.monitor::before, .monitor::after,
+.monitor .corner-bl, .monitor .corner-br {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border-color: var(--gold);
+  border-style: solid;
+  transition: border-color var(--transition);
+}
+body.activated .monitor::before,
+body.activated .monitor::after,
+body.activated .monitor .corner-bl,
+body.activated .monitor .corner-br { border-color: #000; }
+.monitor::before  { top: -1px; left: -1px;  border-width: 2px 0 0 2px; }
+.monitor::after   { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+.monitor .corner-bl { bottom: -1px; left: -1px;  border-width: 0 0 2px 2px; }
+.monitor .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
-  .container {
-    width: min(720px, 95vw);
-    position: relative;
-    z-index: 1;
-  }
+/* ═══ HEADER ═══ */
+.freq-label {
+  font-size: 0.52rem;
+  letter-spacing: 3px;
+  opacity: 0.4;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.title-main {
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-align: center;
+  line-height: 1;
+}
+.title-sub {
+  font-size: 0.6rem;
+  letter-spacing: 4px;
+  opacity: 0.45;
+  text-align: center;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
 
-  /* Header */
-  .header {
-    text-align: center;
-    margin-bottom: 2.5rem;
-  }
+/* ═══ SEISMO BAR ═══ */
+.seismo-wrap {
+  margin: 18px 0 0;
+  height: 36px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+body.activated .seismo-wrap { border-color: rgba(0,0,0,0.2); }
+canvas#seismo { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-  .logo {
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 5vw, 3rem);
-    font-weight: 900;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    line-height: 1;
-  }
+/* ═══ STATUS ═══ */
+#status {
+  font-family: var(--display);
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0 8px;
+  transition: color var(--transition);
+}
 
-  .logo span {
-    color: var(--gold);
-  }
-  body.ACTIVATED .logo span { color: #000; }
+/* ═══ PROGRESS ═══ */
+.progress-wrap {
+  height: 2px;
+  background: var(--gold-dim);
+  margin-bottom: 16px;
+  overflow: hidden;
+  display: none;
+}
+body.activated .progress-wrap { background: rgba(0,0,0,0.15); }
+.progress-bar {
+  height: 100%;
+  background: var(--gold2);
+  width: 0%;
+  transition: width 0.4s linear;
+  box-shadow: 0 0 8px var(--gold2);
+}
+body.activated .progress-bar { background: #000; box-shadow: none; }
 
-  .subtitle {
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    opacity: 0.5;
-    margin-top: 0.4rem;
-    text-transform: uppercase;
-  }
+/* ═══ QR AREA ═══ */
+#qrcode-wrap {
+  display: none;
+  background: #fff;
+  padding: 10px;
+  border-radius: 4px;
+  text-align: center;
+  margin: 0 auto 16px;
+  width: fit-content;
+}
+#qrcode-wrap img { display: block; }
 
-  /* Seismograph */
-  .seismo-wrap {
-    border: 1px solid var(--border);
-    padding: 1.2rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    background: rgba(0,255,157,0.02);
-  }
-  body.ACTIVATED .seismo-wrap { background: rgba(0,0,0,0.05); }
+.deeplink-btn {
+  display: none;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  padding: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  transition: background 0.2s, color 0.2s;
+}
+.deeplink-btn:hover { background: var(--fg); color: var(--bg); }
 
-  .seismo-label {
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    opacity: 0.4;
-    margin-bottom: 0.6rem;
-    text-transform: uppercase;
-  }
+/* ═══ BUTTON ═══ */
+#botao {
+  width: 100%;
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 18px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: opacity 0.2s, transform 0.1s;
+  margin-bottom: 4px;
+}
+#botao:hover { opacity: 0.88; transform: scale(0.995); }
+#botao:disabled { opacity: 0.4; cursor: default; transform: none; }
 
-  canvas#seismo {
-    width: 100%;
-    height: 80px;
-    display: block;
-  }
+/* ═══ LOG ═══ */
+#log-area {
+  margin-top: 14px;
+  font-size: 0.68rem;
+  color: var(--green);
+  min-height: 38px;
+  line-height: 1.6;
+  border-top: 1px solid rgba(0,255,204,0.12);
+  padding-top: 10px;
+  transition: color var(--transition), border-color var(--transition);
+  max-height: 80px;
+  overflow-y: auto;
+}
+body.activated #log-area { color: #000; border-color: rgba(0,0,0,0.2); }
 
-  /* Status Panel */
-  .status-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
+/* ═══ ACTIVATON FLASH ═══ */
+.flash-overlay {
+  position: fixed; inset: 0;
+  background: var(--gold2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+.flash-overlay.fire {
+  animation: flashPop 0.5s ease-out forwards;
+}
+@keyframes flashPop {
+  0%   { opacity: 0.95; }
+  100% { opacity: 0; }
+}
 
-  .panel-block {
-    border: 1px solid var(--border);
-    padding: 1rem 1.2rem;
-    background: rgba(0,255,157,0.02);
-  }
-  body.ACTIVATED .panel-block { background: rgba(0,0,0,0.05); }
+/* ═══ BLINK ═══ */
+.blink { animation: blinkAnim 0.8s step-end infinite; }
+@keyframes blinkAnim { 50% { opacity: 0.2; } }
 
-  .panel-label {
-    font-size: 0.55rem;
-    letter-spacing: 0.25em;
-    opacity: 0.4;
-    text-transform: uppercase;
-    margin-bottom: 0.4rem;
-  }
-
-  .panel-value {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    word-break: break-all;
-    transition: color 0.4s;
-  }
-
-  /* Main message */
-  .main-message {
-    border: 1px solid var(--border);
-    padding: 1.8rem;
-    text-align: center;
-    margin-bottom: 1.5rem;
-    min-height: 110px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,255,157,0.02);
-    position: relative;
-    overflow: hidden;
-  }
-  body.ACTIVATED .main-message { background: rgba(0,0,0,0.05); }
-
-  .main-message::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, var(--fg), transparent);
-    opacity: 0;
-    transform: scaleX(0);
-    transition: opacity 0.3s, transform 0.5s;
-  }
-  .main-message.flash::before {
-    opacity: 0.05;
-    transform: scaleX(1);
-    animation: scanFlash 0.5s ease forwards;
-  }
-  @keyframes scanFlash {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  .status-text {
-    font-family: var(--font-display);
-    font-size: clamp(1rem, 3vw, 1.6rem);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    transition: all 0.4s;
-  }
-
-  .status-sub {
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    opacity: 0.5;
-    margin-top: 0.5rem;
-    text-transform: uppercase;
-  }
-
-  /* Amount buttons */
-  .amount-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .amt-btn {
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--fg);
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    letter-spacing: 0.1em;
-    padding: 0.8rem 0.5rem;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    display: block;
-    transition: all 0.2s;
-    text-transform: uppercase;
-  }
-  .amt-btn:hover {
-    background: var(--fg);
-    color: var(--bg);
-  }
-  .amt-btn .sat-num {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 700;
-    display: block;
-    margin-bottom: 0.2rem;
-  }
-  .amt-btn .sat-label {
-    font-size: 0.55rem;
-    opacity: 0.6;
-    letter-spacing: 0.2em;
-  }
-
-  /* Log terminal */
-  .log-wrap {
-    border: 1px solid var(--border);
-    padding: 1rem 1.2rem;
-    background: rgba(0,0,0,0.3);
-  }
-  body.ACTIVATED .log-wrap { background: rgba(0,0,0,0.1); }
-
-  .log-label {
-    font-size: 0.55rem;
-    letter-spacing: 0.25em;
-    opacity: 0.4;
-    text-transform: uppercase;
-    margin-bottom: 0.6rem;
-  }
-
-  #log-output {
-    font-size: 0.7rem;
-    line-height: 1.7;
-    height: 100px;
-    overflow-y: auto;
-    opacity: 0.7;
-  }
-  #log-output div::before {
-    content: '> ';
-    opacity: 0.4;
-  }
-
-  /* Footer */
-  .footer {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.6rem;
-    letter-spacing: 0.2em;
-    opacity: 0.3;
-    text-transform: uppercase;
-  }
-
-  /* Blink cursor */
-  @keyframes blink { 50% { opacity: 0; } }
-  .cursor { animation: blink 1s step-end infinite; }
-
-  /* Pulse ring on activation */
-  .pulse-ring {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--gold);
-    pointer-events: none;
-    opacity: 0;
-    z-index: 997;
-  }
-  .pulse-ring.fire {
-    animation: pulseExpand 0.8s ease-out forwards;
-  }
-  @keyframes pulseExpand {
-    0%   { opacity: 0.9; transform: translate(-50%,-50%) scale(1); }
-    100% { opacity: 0; transform: translate(-50%,-50%) scale(80); }
-  }
+/* ═══ SCROLLBAR ═══ */
+#log-area::-webkit-scrollbar { width: 3px; }
+#log-area::-webkit-scrollbar-track { background: transparent; }
+#log-area::-webkit-scrollbar-thumb { background: var(--gold-dim); }
 </style>
 </head>
 <body>
 
-<div class="pulse-ring" id="pulseRing"></div>
+<div class="flash-overlay" id="flashOverlay"></div>
 
-<div class="container">
+<div class="monitor">
+  <div class="corner-bl"></div>
+  <div class="corner-br"></div>
 
-  <div class="header">
-    <div class="logo">Lab<span>Net</span> v001</div>
-    <div class="subtitle">Sismógrafo de Alta Frequência · 33Hz · Protocolo Bitcoin/Lightning</div>
-  </div>
+  <div class="freq-label">PROTOCOLO LABRIOLAG · FREQUÊNCIA 33Hz · 0.03s</div>
+  <div class="title-main">LABRIOLAG</div>
+  <div class="title-sub">Core 25/25 · Interface de Valor</div>
 
-  <!-- Seismograph canvas -->
   <div class="seismo-wrap">
-    <div class="seismo-label">Canal Delta — Monitoramento de Pulso Energético</div>
     <canvas id="seismo"></canvas>
   </div>
 
-  <!-- Status -->
-  <div class="status-panel">
-    <div class="panel-block">
-      <div class="panel-label">LN Address</div>
-      <div class="panel-value" style="font-size:0.75rem">hurtkidney01@<br>walletofsatoshi.com</div>
-    </div>
-    <div class="panel-block">
-      <div class="panel-label">Status do Sismógrafo</div>
-      <div class="panel-value" id="poll-status">AGUARDANDO<span class="cursor">_</span></div>
-    </div>
+  <div id="status">AGUARDANDO INICIALIZAÇÃO<span class="blink">_</span></div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar" id="progressBar"></div>
   </div>
 
-  <!-- Main message display -->
-  <div class="main-message" id="mainMsg">
-    <div class="status-text" id="statusText">AGUARDANDO PULSO ENERGÉTICO</div>
-    <div class="status-sub" id="statusSub">Envie Sats para ativar a interface · 33Hz polling ativo</div>
-  </div>
+  <div id="qrcode-wrap"></div>
 
-  <!-- Amount trigger buttons -->
-  <div class="amount-grid">
-    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com?amount=1000" id="btn1">
-      <span class="sat-num">1</span>
-      <span class="sat-label">Sat · Módulo</span>
-    </a>
-    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com?amount=21000" id="btn21">
-      <span class="sat-num">21</span>
-      <span class="sat-label">Sats · Soberania</span>
-    </a>
-    <a class="amt-btn" href="lightning:hurtkidney01@walletofsatoshi.com" id="btnCustom">
-      <span class="sat-num">∞</span>
-      <span class="sat-label">Valor Livre</span>
-    </a>
-  </div>
+  <a class="deeplink-btn" id="deeplinkBtn" href="#">
+    ⚡ ABRIR NA CARTEIRA BIPA
+  </a>
 
-  <!-- Log terminal -->
-  <div class="log-wrap">
-    <div class="log-label">Log de Sistema — LabNet v001</div>
-    <div id="log-output"></div>
-  </div>
+  <button id="botao" onclick="iniciarPulso()">
+    GERAR PULSO DE 21 SATS
+  </button>
 
-  <div class="footer">
-    Interface de Valor · Energia → Instrução → Renderização · Sr. Labriolag · LabNet Log v001
-  </div>
-
+  <div id="log-area">Sistema pronto. Aguardando instrução energética.</div>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════
-// LabNet v001 — Sismógrafo Lightning 33Hz
-// ═══════════════════════════════════════════════
+/* ════════════════════════════════════════════════════
+   LABRIOLAG — Motor de Detecção LNURL-verify
+   Fluxo real:
+   1. Resolve LN Address → obtém LNURL-pay callback
+   2. Faz POST no callback → obtém invoice real + paymentHash
+   3. Loop 30ms (estado local) + fetch 1.5s → endpoint verify
+   4. Quando settled=true → ativa UI instantaneamente
+   ════════════════════════════════════════════════════ */
 
-const CONFIG = {
-  LN_ADDRESS: 'hurtkidney01@walletofsatoshi.com',
-  INTERVAL_MS: 30,          // 33Hz
-  POLL_LN_MS: 8000,         // Checar LNURL a cada 8s (limite de rate)
-  LNURL_VERIFY_DOMAIN: 'walletofsatoshi.com',
+const CFG = {
+  LN_ADDRESS:   'hurtkidney01@walletofsatoshi.com',
+  SATS:         21,
+  POLL_MS:      1500,   // checar verify a cada 1.5s
+  LOOP_MS:      30,     // 33Hz loop interno (canvas + flag check)
 };
 
 const DICIONARIO = {
-  1:  'MÓDULO ATIVADO',
-  21: 'SOBERANIA ALCANÇADA',
+  21:  'SOBERANIA ALCANÇADA — SISTEMA LABRIOLAG 25/25 ONLINE',
+  1:   'MÓDULO ATIVADO',
 };
 
-// ─── State ───────────────────────────────────────
-let state = {
-  activated: false,
-  lastPaymentHash: null,
-  lastAmount: null,
-  tickCount: 0,
-  lnurlData: null,
-  lastVerifyCheck: 0,
-  wavePhase: 0,
-  signalAmplitude: 0.3,
-  targetAmplitude: 0.3,
+/* ─── State ─────────────────────────────────── */
+const S = {
+  phase: 'idle',      // idle | generating | waiting | done
+  paymentHash: null,
+  verifyUrl:   null,
+  invoice:     null,
+  loopTimer:   null,
+  pollTimer:   null,
+  tick:        0,
+  amplitude:   0.25,
+  targetAmp:   0.25,
+  activated:   false,
 };
 
-// ─── DOM ─────────────────────────────────────────
-const body        = document.body;
-const statusText  = document.getElementById('statusText');
-const statusSub   = document.getElementById('statusSub');
-const pollStatus  = document.getElementById('poll-status');
-const mainMsg     = document.getElementById('mainMsg');
-const logOutput   = document.getElementById('log-output');
-const pulseRing   = document.getElementById('pulseRing');
+/* ─── DOM ────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const statusEl    = $('status');
+const logEl       = $('log-area');
+const botao       = $('botao');
+const qrWrap      = $('qrcode-wrap');
+const deeplinkBtn = $('deeplinkBtn');
+const progressWrap= $('progressWrap');
+const progressBar = $('progressBar');
+const flashEl     = $('flashOverlay');
 
-// ─── Logger ───────────────────────────────────────
-function log(msg) {
-  const ts = new Date().toISOString().substr(11, 8);
-  const el = document.createElement('div');
-  el.textContent = `[${ts}] ${msg}`;
-  logOutput.appendChild(el);
-  logOutput.scrollTop = logOutput.scrollHeight;
-  // Keep last 50 lines
-  while (logOutput.children.length > 50) logOutput.removeChild(logOutput.firstChild);
+/* ─── Logger ─────────────────────────────────── */
+function log(msg, cls='') {
+  const ts = new Date().toISOString().substr(11,8);
+  const line = document.createElement('div');
+  if (cls) line.style.color = cls;
+  line.textContent = `[${ts}] ${msg}`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  while (logEl.children.length > 60) logEl.removeChild(logEl.firstChild);
 }
 
-// ─── Seismograph Canvas ───────────────────────────
-const canvas = document.getElementById('seismo');
+/* ─── Seismograph ─────────────────────────────── */
+const canvas = $('seismo');
 const ctx    = canvas.getContext('2d');
-const waveHistory = new Float32Array(600).fill(0);
-let waveIdx = 0;
+const WAVE   = new Float32Array(400).fill(0);
+let wIdx     = 0;
 
 function resizeCanvas() {
-  canvas.width  = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth  * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
 }
-resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 function drawSeismo() {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
+  const activated = S.activated;
+  const lineColor = activated ? 'rgba(0,0,0,0.6)' : '#d4af37';
 
-  // Background grid
-  ctx.strokeStyle = state.activated
-    ? 'rgba(0,0,0,0.1)'
-    : 'rgba(0,255,157,0.07)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += W / 10) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-  }
-  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-
-  // Wave
-  const color = state.activated ? '#000' : '#00ff9d';
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5 * window.devicePixelRatio;
-  ctx.shadowBlur  = state.activated ? 0 : 8;
-  ctx.shadowColor = color;
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth   = 1.5 * (window.devicePixelRatio || 1);
+  ctx.shadowBlur  = activated ? 0 : 6;
+  ctx.shadowColor = '#d4af37';
   ctx.beginPath();
 
-  const len = waveHistory.length;
+  const len = WAVE.length;
   for (let i = 0; i < len; i++) {
-    const xi = (i / len) * W;
-    const yi = H/2 + waveHistory[(waveIdx + i) % len] * (H/2 - 4);
+    const xi = (i / (len - 1)) * W;
+    const yi = H / 2 + WAVE[(wIdx + i) % len] * (H / 2 - 2);
     i === 0 ? ctx.moveTo(xi, yi) : ctx.lineTo(xi, yi);
   }
   ctx.stroke();
   ctx.shadowBlur = 0;
 }
 
-// ─── LNURL-pay resolve ───────────────────────────
-async function resolveLNAddress() {
-  const [user, domain] = CONFIG.LN_ADDRESS.split('@');
-  const url = `https://${domain}/.well-known/lnurlp/${user}`;
-  try {
-    const r = await fetch(url);
-    const d = await r.json();
-    state.lnurlData = d;
-    log(`LNURL resolvido: ${d.callback ? 'OK' : 'FALHOU'}`);
-    if (d.commentAllowed) log(`Comentário permitido: ${d.commentAllowed} chars`);
-    return d;
-  } catch(e) {
-    log(`Erro ao resolver LN Address: ${e.message}`);
-    return null;
-  }
-}
-
-// ─── LNURL-verify polling ────────────────────────
-// WalletOfSatoshi expõe endpoint de verify para alguns endereços.
-// Fallback: monitoramos via verificação de metadata do callback.
-async function checkLNURLVerify() {
-  if (!state.lnurlData) {
-    await resolveLNAddress();
-    return;
-  }
-
-  // Tenta endpoint verify padrão
-  const [user, domain] = CONFIG.LN_ADDRESS.split('@');
-  const verifyUrl = `https://${domain}/.well-known/lnurlp/${user}/verify`;
-
-  try {
-    const r = await fetch(verifyUrl);
-    if (r.ok) {
-      const d = await r.json();
-      log(`Verify check: status=${d.settled ?? 'n/a'} hash=${d.pr?.substr(0,12) ?? 'n/a'}...`);
-
-      if (d.settled && d.pr !== state.lastPaymentHash) {
-        state.lastPaymentHash = d.pr;
-        handlePaymentDetected(d.amount ? Math.round(d.amount / 1000) : null);
-        return;
-      }
-    }
-  } catch(e) {
-    // Endpoint não disponível, fallback silencioso
-  }
-
-  // Fallback: Mempool.space LN node lookup não aplicável a LN Address
-  // Indicamos ao usuário que o sistema aguarda
-  pollStatus.innerHTML = 'MONITORANDO<span class="cursor">_</span>';
-}
-
-// ─── Payment handler ─────────────────────────────
-function handlePaymentDetected(amountSats) {
-  state.activated = true;
-  state.targetAmplitude = 1.0;
-  state.lastAmount = amountSats;
-
-  // Lookup dicionário
-  const msg = amountSats && DICIONARIO[amountSats]
-    ? DICIONARIO[amountSats]
-    : amountSats
-      ? `${amountSats} SAT${amountSats > 1 ? 'S' : ''} RECEBIDO`
-      : 'PAGAMENTO DETECTADO';
-
-  // Update UI
-  body.classList.add('ACTIVATED');
-  statusText.textContent = msg;
-  statusSub.textContent  = amountSats
-    ? `${amountSats} sat${amountSats > 1 ? 's' : ''} transmutados em instrução de renderização`
-    : 'Pulso energético detectado — interface transmutada';
-
-  mainMsg.classList.add('flash');
-  setTimeout(() => mainMsg.classList.remove('flash'), 600);
-
-  // Pulse ring
-  pulseRing.classList.remove('fire');
-  void pulseRing.offsetWidth;
-  pulseRing.classList.add('fire');
-
-  log(`⚡ PAGAMENTO DETECTADO${amountSats ? ` — ${amountSats} sat(s)` : ''}`);
-  log(`DICIONÁRIO → ${msg}`);
-  log(`INTERFACE TRANSMUTADA → background #d4af37`);
-
-  pollStatus.innerHTML = 'ATIVADO ⚡';
-}
-
-// ─── Demo / Test ─────────────────────────────────
-// Exposição global para testes via console: labnet.simulate(21)
-window.labnet = {
-  simulate: (sats) => {
-    log(`[SIMULAÇÃO] Disparando pagamento de ${sats} sat(s)...`);
-    handlePaymentDetected(sats);
-  },
-  reset: () => {
-    state.activated = false;
-    state.targetAmplitude = 0.3;
-    body.classList.remove('ACTIVATED');
-    statusText.textContent = 'AGUARDANDO PULSO ENERGÉTICO';
-    statusSub.textContent  = 'Envie Sats para ativar a interface · 33Hz polling ativo';
-    pollStatus.innerHTML   = 'AGUARDANDO<span class="cursor">_</span>';
-    log('[RESET] Sistema reiniciado');
-  }
-};
-
-// ─── Main 33Hz loop ───────────────────────────────
-function tick() {
-  state.tickCount++;
-  const t = state.tickCount * (CONFIG.INTERVAL_MS / 1000);
+/* ─── 33Hz main loop ──────────────────────────── */
+function mainLoop() {
+  S.tick++;
+  const t = S.tick * (CFG.LOOP_MS / 1000);
 
   // Smooth amplitude
-  state.signalAmplitude += (state.targetAmplitude - state.signalAmplitude) * 0.05;
-  if (state.activated && state.signalAmplitude > 0.35) {
-    state.targetAmplitude = Math.max(0.35, state.targetAmplitude * 0.992);
-  }
+  S.amplitude += (S.targetAmp - S.amplitude) * 0.04;
 
-  // Generate wave sample
-  const base = Math.sin(t * 2.1) * 0.3
-             + Math.sin(t * 5.7) * 0.15
-             + Math.sin(t * 11.3) * 0.08;
+  // Wave generation
+  const base  = Math.sin(t * 1.9) * 0.35 + Math.sin(t * 4.3) * 0.2 + Math.sin(t * 9.1) * 0.1;
+  const noise = (Math.random() - 0.5) * 0.15;
+  const spike = (S.phase === 'waiting' && S.targetAmp > 0.5)
+    ? Math.sin(t * 40) * 0.35 : 0;
 
-  const noise = (Math.random() - 0.5) * 0.12;
-  const spike = state.activated && state.signalAmplitude > 0.5
-    ? Math.sin(t * 33) * 0.4
-    : 0;
-
-  waveHistory[waveIdx] = (base + noise + spike) * state.signalAmplitude;
-  waveIdx = (waveIdx + 1) % waveHistory.length;
+  WAVE[wIdx] = (base + noise + spike) * S.amplitude;
+  wIdx = (wIdx + 1) % WAVE.length;
 
   drawSeismo();
 
-  // Poll LN every 8s
-  const now = Date.now();
-  if (now - state.lastVerifyCheck > CONFIG.POLL_LN_MS) {
-    state.lastVerifyCheck = now;
-    checkLNURLVerify();
+  // Decay after activation
+  if (S.activated && S.targetAmp > 0.3) {
+    S.targetAmp = Math.max(0.3, S.targetAmp * 0.994);
   }
 }
 
-// ─── Init ─────────────────────────────────────────
-log('LabNet v001 inicializado');
-log(`Monitorando: ${CONFIG.LN_ADDRESS}`);
-log(`Frequência: ${Math.round(1000/CONFIG.INTERVAL_MS)}Hz (${CONFIG.INTERVAL_MS}ms)`);
-log('Use labnet.simulate(1) ou labnet.simulate(21) para testar');
-log('Aguardando resolução de LN Address...');
+/* ════════════════════════════════════════════════
+   LNURL FLOW
+   ════════════════════════════════════════════════ */
 
-resolveLNAddress();
-setInterval(tick, CONFIG.INTERVAL_MS);
+/* Step 1 — Resolver LN Address */
+async function resolveLNAddress() {
+  const [user, domain] = CFG.LN_ADDRESS.split('@');
+  const url = `https://${domain}/.well-known/lnurlp/${user}`;
+  log(`Resolvendo LN Address...`);
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (d.tag !== 'payRequest') throw new Error('Não é um endpoint payRequest');
+    log(`Callback obtido: ${d.callback.substr(0,40)}...`);
+    return d;
+  } catch (e) {
+    throw new Error(`Falha ao resolver LN Address: ${e.message}`);
+  }
+}
+
+/* Step 2 — Pedir invoice ao callback */
+async function fetchInvoice(callbackUrl, sats) {
+  const msats = sats * 1000;
+  const url   = `${callbackUrl}?amount=${msats}`;
+  log(`Solicitando invoice (${sats} sats)...`);
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (!d.pr) throw new Error('Invoice ausente na resposta');
+    log(`Invoice recebida: ${d.pr.substr(0,20)}...`);
+
+    // verifyUrl pode vir no campo verify ou successAction.url
+    const verifyUrl = d.verify
+      || (d.successAction && d.successAction.url)
+      || null;
+
+    if (verifyUrl) {
+      log(`Endpoint verify: ${verifyUrl.substr(0,40)}...`);
+    } else {
+      log(`Sem verify URL — usando polling via invoice hash`, '#ffaa00');
+    }
+
+    return { invoice: d.pr, verifyUrl };
+  } catch (e) {
+    throw new Error(`Falha ao gerar invoice: ${e.message}`);
+  }
+}
+
+/* Step 3 — Polling verify */
+async function checkVerify() {
+  if (S.phase !== 'waiting') return;
+
+  /* --- Via endpoint verify (preferencial) --- */
+  if (S.verifyUrl) {
+    try {
+      const r = await fetch(S.verifyUrl);
+      if (r.ok) {
+        const d = await r.json();
+        log(`Verify → settled: ${d.settled}`);
+        if (d.settled === true) {
+          ativarSucesso(CFG.SATS);
+          return;
+        }
+      }
+    } catch (e) {
+      log(`Verify fetch erro: ${e.message}`, '#ff6644');
+    }
+  } else {
+    /* --- Fallback: checar via mempool (só on-chain, LN não exposto) --- */
+    /* Na ausência de verify URL, exibimos status mas não há como confirmar
+       sem backend. Indicamos isso ao usuário. */
+    log(`Aguardando pagamento... (confirm. depende de verify URL)`, '#aaa');
+  }
+
+  // Reagendar se ainda não ativou
+  if (S.phase === 'waiting') {
+    S.pollTimer = setTimeout(checkVerify, CFG.POLL_MS);
+  }
+}
+
+/* ─── UI: gerar QR ────────────────────────────── */
+function renderQR(invoice) {
+  const qr = qrcode(0, 'M');
+  // QR code com BOLT11 invoice real
+  try {
+    qr.addData(`lightning:${invoice.toUpperCase()}`);
+    qr.make();
+  } catch(e) {
+    // fallback se invoice muito longa para versão 0
+    const qr2 = qrcode(10, 'L');
+    qr2.addData(`lightning:${invoice.toUpperCase()}`);
+    qr2.make();
+    qrWrap.innerHTML = qr2.createImgTag(3);
+    qrWrap.style.display = 'block';
+    return;
+  }
+  qrWrap.innerHTML = qr.createImgTag(4);
+  qrWrap.style.display = 'block';
+}
+
+/* ─── Ativação de sucesso ─────────────────────── */
+function ativarSucesso(sats) {
+  S.phase     = 'done';
+  S.activated = true;
+  S.targetAmp = 1.0;
+  clearTimeout(S.pollTimer);
+
+  const msg = DICIONARIO[sats] || `${sats} SATS RECONHECIDOS`;
+
+  // Flash visual
+  flashEl.classList.remove('fire');
+  void flashEl.offsetWidth;
+  flashEl.classList.add('fire');
+
+  // UI
+  document.body.classList.add('activated');
+  statusEl.innerHTML = `⚡ ${msg} ⚡`;
+  qrWrap.style.display   = 'none';
+  deeplinkBtn.style.display = 'none';
+  progressWrap.style.display = 'none';
+
+  log(`⚡ PULSO DETECTADO — ${sats} sat(s) confirmados`, '#000');
+  log(`DICIONÁRIO: ${msg}`, '#000');
+  log(`INTERFACE TRANSMUTADA → #d4af37`, '#000');
+}
+
+/* ─── Ponto de entrada ────────────────────────── */
+async function iniciarPulso() {
+  if (S.phase !== 'idle') return;
+  S.phase = 'generating';
+
+  botao.disabled = true;
+  progressWrap.style.display = 'block';
+  S.targetAmp = 0.6;
+
+  // Animated progress during generation
+  let prog = 0;
+  const progInterval = setInterval(() => {
+    prog = Math.min(prog + 3, 85);
+    progressBar.style.width = prog + '%';
+  }, 80);
+
+  statusEl.innerHTML = `GERANDO INVOICE...<span class="blink">_</span>`;
+  log(`Iniciando fluxo LNURL-pay para ${CFG.SATS} sats`);
+
+  try {
+    /* 1. Resolve LN Address */
+    const lnurlData = await resolveLNAddress();
+
+    /* 2. Fetch invoice real */
+    const { invoice, verifyUrl } = await fetchInvoice(lnurlData.callback, CFG.SATS);
+    S.invoice    = invoice;
+    S.verifyUrl  = verifyUrl;
+    S.phase      = 'waiting';
+    S.targetAmp  = 0.85;
+
+    // Stop fake progress
+    clearInterval(progInterval);
+    progressBar.style.width = '100%';
+    setTimeout(() => { progressWrap.style.display = 'none'; }, 400);
+
+    /* 3. Render QR com invoice real */
+    renderQR(invoice);
+
+    /* 4. Deep link para abrir na Bipa */
+    const deeplink = `lightning:${invoice}`;
+    deeplinkBtn.href = deeplink;
+    deeplinkBtn.style.display = 'block';
+
+    statusEl.innerHTML = `AGUARDANDO ${CFG.SATS} SATS<span class="blink">_</span>`;
+    log(`QR gerado. Escaneie ou clique em "Abrir na Bipa"`);
+    log(`Polling LNURL-verify a cada ${CFG.POLL_MS}ms`);
+
+    /* 5. Iniciar polling real */
+    if (verifyUrl) {
+      S.pollTimer = setTimeout(checkVerify, CFG.POLL_MS);
+    } else {
+      log(`⚠ verify URL ausente — detecção automática limitada`, '#ffaa00');
+      log(`Use labnet.simular() para forçar ativação após pagar`, '#ffaa00');
+    }
+
+  } catch(err) {
+    clearInterval(progInterval);
+    S.phase = 'idle';
+    botao.disabled = false;
+    S.targetAmp = 0.25;
+    progressWrap.style.display = 'none';
+    statusEl.innerHTML = `ERRO NA GERAÇÃO<span class="blink">_</span>`;
+    log(`ERRO: ${err.message}`, '#ff4444');
+    log(`Verifique conexão e tente novamente`, '#ff4444');
+    log(`Fallback: labnet.simular(21) para testar`, '#ffaa00');
+  }
+}
+
+/* ─── Debug global ────────────────────────────── */
+window.labnet = {
+  simular: (sats = 21) => {
+    log(`[SIMULAÇÃO] Forçando ativação com ${sats} sat(s)...`);
+    ativarSucesso(sats);
+  },
+  reset: () => {
+    S.phase = 'idle';
+    S.activated = false;
+    S.targetAmp = 0.25;
+    S.amplitude = 0.25;
+    clearTimeout(S.pollTimer);
+    document.body.classList.remove('activated');
+    statusEl.innerHTML = 'SISTEMA RESETADO<span class="blink">_</span>';
+    qrWrap.style.display = 'none';
+    deeplinkBtn.style.display = 'none';
+    progressWrap.style.display = 'none';
+    botao.disabled = false;
+    log('[RESET] Sistema reiniciado');
+  },
+  estado: () => console.log({ ...S }),
+};
+
+/* ─── Start ───────────────────────────────────── */
+log('LabNet LABRIOLAG Core 25/25 iniciado');
+log(`Endereço: ${CFG.LN_ADDRESS}`);
+log(`Loop interno: ${CFG.LOOP_MS}ms (${Math.round(1000/CFG.LOOP_MS)}Hz)`);
+log(`Polling verify: ${CFG.POLL_MS}ms`);
+
+S.loopTimer = setInterval(mainLoop, CFG.LOOP_MS);
+statusEl.innerHTML = 'PRONTO — CLIQUE PARA GERAR PULSO<span class="blink">_</span>';
 </script>
 </body>
 </html>
