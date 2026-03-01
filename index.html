@@ -4,68 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LABRIOLAG - Core 25/25</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
-        body { background: #000; color: #d4af37; font-family: 'Courier New', monospace; text-align: center; padding: 20px; transition: 0.1s; overflow: hidden; }
-        .monitor { border: 2px dashed #d4af37; padding: 20px; border-radius: 10px; margin-top: 10vh; }
-        #frequencia { font-size: 0.7rem; color: #555; margin-bottom: 10px; }
-        #status { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; }
-        #log-area { margin-top: 20px; border-top: 1px solid #333; padding-top: 10px; font-size: 0.9rem; color: #00ffcc; }
-        .blink { animation: blinker 0.03s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0.5; } }
+        body { background: #000; color: #d4af37; font-family: 'Courier New', monospace; text-align: center; padding: 20px; transition: 0.5s; }
+        .monitor { border: 2px dashed #d4af37; padding: 20px; border-radius: 10px; margin-top: 5vh; }
+        #status { font-size: 1.2rem; font-weight: bold; text-transform: uppercase; margin: 20px 0; }
+        #qrcode { background: white; padding: 10px; display: inline-block; margin-top: 10px; border-radius: 5px; }
+        .btn-pulso { background: #d4af37; color: #000; border: none; padding: 15px; font-weight: bold; cursor: pointer; border-radius: 5px; width: 100%; margin-top: 10px; }
+        #log-area { margin-top: 20px; font-size: 0.9rem; color: #00ffcc; min-height: 50px; }
     </style>
 </head>
 <body>
 
     <div class="monitor">
-        <div id="frequencia">FREQUÊNCIA DE ESCUTA: 0.03s (33Hz)</div>
-        <div id="status">AGUARDANDO SATS...</div>
-        <p style="font-size: 0.8rem;">hurtkidney01@walletofsatoshi.com</p>
+        <div style="font-size: 0.7rem; color: #555;">FREQUÊNCIA DE ESCUTA: 0.03s</div>
+        <div id="status">AGUARDANDO INICIALIZAÇÃO...</div>
         
-        <div id="log-area">Sismógrafo em Standby</div>
+        <button class="btn-pulso" onclick="gerarFatura(21)">GERAR PULSO DE 21 SATS</button>
+        
+        <div id="qrcode"></div>
+        
+        <div id="log-area">Pronto para receber fofoca da rede.</div>
     </div>
 
     <script>
         const DICIONARIO = {
-            "1": "MÓDULO ATIVADO",
-            "2": "SISTEMA FINANCEIRO ON",
-            "3": "ACESSO LIBERADO",
-            "4": "PROTOCOLO MINERVA",
-            "21": "SOBERANIA ALCANÇADA"
+            "21": "SOBERANIA ALCANÇADA: SISTEMA LABRIOLAG 25/25 ONLINE"
         };
 
-        let ultimoSaldo = 0;
-
-        // --- MOTOR DE ALTA FREQUÊNCIA (0.03s) ---
-        setInterval(() => {
-            // No celular, o Sismógrafo lê a "fofoca" da URL ou do Cache de Rede
-            const urlParams = new URLSearchParams(window.location.search);
-            const satsDetectados = urlParams.get('sats');
-
-            if (satsDetectados && satsDetectados !== ultimoSaldo) {
-                ultimoSaldo = satsDetectados;
-                ativarTranscricao(satsDetectados);
-            }
-        }, 30); // 0.03 segundos
-
-        function ativarTranscricao(sats) {
+        // Função para simular o recebimento (A ponte real usará LNURL/LNBits)
+        function gerarFatura(valor) {
             const statusDiv = document.getElementById('status');
+            const qrcodeDiv = document.getElementById('qrcode');
             const logDiv = document.getElementById('log-area');
-            const traducao = DICIONARIO[sats] || "PULSO: " + sats + " SATS";
 
-            statusDiv.innerText = "⚡ PULSO DETECTADO! ⚡";
-            statusDiv.classList.add('blink');
-            logDiv.innerHTML = `<strong>${traducao}</strong><br>Energia Validada na LN`;
+            statusDiv.innerText = `AGUARDANDO ${valor} SATS DA BIPA...`;
+            logDiv.innerText = "QR Code Gerado. Aponte a câmera e envie.";
 
-            if (sats == "21") {
-                document.body.style.background = "#d4af37";
-                document.body.style.color = "#000";
-            }
-            
-            // Limpa o pulso após 2 segundos para voltar a ouvir
-            setTimeout(() => {
-                statusDiv.classList.remove('blink');
-                statusDiv.innerText = "OUVINDO REDE...";
-            }, 2000);
+            // Gerar QR Code Visual (Simulação do Endereço de Pagamento)
+            const qr = qrcode(0, 'M');
+            qr.addData(`lightning:hurtkidney01@walletofsatoshi.com?amount=${valor}`);
+            qr.make();
+            qrcodeDiv.innerHTML = qr.createImgTag(5);
+
+            // MOTOR DE ESCUTA 0.03s (Simulando o Webhook de Confirmação)
+            let tempo = 0;
+            const sismografo = setInterval(() => {
+                tempo += 0.03;
+                // No sistema real, aqui o script checa o status da Invoice via API
+                // Para o teste do Sr. Labriolag agora, ele aguarda o 'OK' visual
+            }, 30);
+
+            // SIMULAÇÃO DE SUCESSO APÓS PAGAMENTO (Para teste de interface)
+            // No Log v002, usaremos o 'EventSource' para ser 100% automático
+            console.log("Sistema em escuta ultra-rápida...");
+        }
+
+        function ativarSucesso(sats) {
+            document.body.style.background = "#d4af37";
+            document.body.style.color = "#000";
+            document.getElementById('status').innerText = "⚡ ENERGIA RECONHECIDA! ⚡";
+            document.getElementById('log-area').innerText = DICIONARIO[sats];
+            document.getElementById('qrcode').style.display = "none";
         }
     </script>
 </body>
